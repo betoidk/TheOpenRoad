@@ -1,0 +1,646 @@
+<!doctype html>
+<html lang="es" className="scroll-smooth">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>TheOpenRoad - Plataforma de Gestión Operativa</title>
+
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script
+      crossorigin
+      src="https://unpkg.com/react@18/umd/react.production.min.js"
+    ></script>
+    <script
+      crossorigin
+      src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"
+    ></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <script src="https://unpkg.com/lucide@latest"></script>
+
+    <style>
+      @import url("https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap");
+      body {
+        font-family: "Inter", sans-serif;
+        background-color: #0f172a;
+        color: #f8fafc;
+        overflow-x: hidden;
+      }
+
+      ::-webkit-scrollbar {
+        width: 8px;
+      }
+      ::-webkit-scrollbar-track {
+        background: #0f172a;
+      }
+      ::-webkit-scrollbar-thumb {
+        background: #334155;
+        border-radius: 4px;
+      }
+      ::-webkit-scrollbar-thumb:hover {
+        background: #475569;
+      }
+
+      .fade-in-up {
+        animation: fadeInUp 0.8s ease-out forwards;
+        opacity: 0;
+        transform: translateY(20px);
+      }
+      .delay-100 {
+        animation-delay: 100ms;
+      }
+      .delay-200 {
+        animation-delay: 200ms;
+      }
+      .delay-300 {
+        animation-delay: 300ms;
+      }
+
+      @keyframes fadeInUp {
+        to {
+          opacity: 1;
+          transform: translateY(0);
+        }
+      }
+
+      .glow-bg {
+        position: absolute;
+        width: 600px;
+        height: 600px;
+        background: radial-gradient(
+          circle,
+          rgba(20, 184, 166, 0.15) 0%,
+          rgba(15, 23, 42, 0) 70%
+        );
+        border-radius: 50%;
+        z-index: -1;
+        pointer-events: none;
+      }
+
+      .feature-card {
+        transition: all 0.3s ease;
+      }
+      .feature-card:hover {
+        transform: translateY(-5px);
+        box-shadow:
+          0 20px 25px -5px rgba(0, 0, 0, 0.5),
+          0 8px 10px -6px rgba(0, 0, 0, 0.5);
+        border-color: #14b8a6; /* teal-500 */
+      }
+    </style>
+  </head>
+  <body>
+    <div id="root"></div>
+
+    <script type="text/babel">
+      const { useEffect, useState } = React;
+
+      const LandingPage = () => {
+        const [isScrolled, setIsScrolled] = useState(false);
+        const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+
+        useEffect(() => {
+          const handleScroll = () => {
+            setIsScrolled(window.scrollY > 50);
+          };
+          window.addEventListener("scroll", handleScroll);
+          return () => window.removeEventListener("scroll", handleScroll);
+        }, []);
+
+        useEffect(() => {
+          if (window.lucide) {
+            window.lucide.createIcons();
+          }
+        });
+
+        const features = [
+          {
+            title: "Expansión y Selección",
+            desc: "Selección e incorporación de nuevas líneas de actividad, con opciones adaptadas a presupuesto, ubicación y potencial de rendimiento.",
+            icon: "map",
+          },
+          {
+            title: "Supervisión Integral",
+            desc: "Control exacto de niveles de existencias, estado de producción, disponibilidad de insumos y rendimiento de cada unidad en tiempo real.",
+            icon: "activity",
+          },
+          {
+            title: "Mejora Continua",
+            desc: "Implementación de mejoras: actualización de equipamiento, refuerzo de seguridad y optimización de procesos operativos.",
+            icon: "settings",
+          },
+          {
+            title: "Logística y Comercialización",
+            desc: "Coordinación de operaciones logísticas, permitiendo programar entregas y maximizar ingresos según condiciones del mercado.",
+            icon: "truck",
+          },
+          {
+            title: "Inteligencia de Negocio",
+            desc: "Generación de informes y seguimiento de resultados, para tomar decisiones estratégicas que impulsen el crecimiento.",
+            icon: "bar-chart-2",
+          },
+        ];
+
+        return (
+          <div className="relative min-h-screen">
+            <header
+              className={`fixed w-full top-0 z-50 transition-all duration-300 ${
+                isScrolled
+                  ? "bg-slate-900/95 backdrop-blur-md shadow-lg border-b border-slate-800 py-3"
+                  : "bg-transparent py-5"
+              }`}
+            >
+              <div className="max-w-7xl mx-auto px-6 flex justify-between items-center">
+                <div className="flex items-center gap-2">
+                  <i
+                    data-lucide="compass"
+                    className="w-8 h-8 text-teal-400"
+                  ></i>
+                  <span className="text-xl font-bold tracking-wider text-white">
+                    TheOpenRoad
+                  </span>
+                </div>
+
+                <nav className="hidden md:flex items-center gap-8">
+                  <a
+                    href="#proposito"
+                    className="text-sm font-medium text-slate-300 hover:text-teal-400 transition-colors"
+                  >
+                    Propósito
+                  </a>
+                  <a
+                    href="#funciones"
+                    className="text-sm font-medium text-slate-300 hover:text-teal-400 transition-colors"
+                  >
+                    Funciones
+                  </a>
+                  <a
+                    href="#acceso"
+                    className="text-sm font-medium text-slate-300 hover:text-teal-400 transition-colors"
+                  >
+                    Acceso
+                  </a>
+                  <div className="w-px h-5 bg-slate-700"></div>
+                  <a
+                    href="candidatos_web.html"
+                    className="text-sm font-medium text-teal-400 hover:text-teal-300 flex items-center gap-1.5 transition-colors"
+                  >
+                    <i data-lucide="briefcase" className="w-4 h-4"></i> Empleos
+                  </a>
+                  <button className="bg-white hover:bg-slate-200 text-slate-900 px-5 py-2 rounded-lg text-sm font-bold transition-colors">
+                    Iniciar Red
+                  </button>
+                </nav>
+
+                <button
+                  className="md:hidden text-slate-300"
+                  onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+                >
+                  <i
+                    data-lucide={mobileMenuOpen ? "x" : "menu"}
+                    className="w-6 h-6"
+                  ></i>
+                </button>
+              </div>
+
+              {mobileMenuOpen && (
+                <div className="md:hidden absolute top-full left-0 w-full bg-slate-900 border-b border-slate-800 p-6 flex flex-col gap-4 shadow-2xl">
+                  <a
+                    href="#proposito"
+                    onClick={() => setMobileMenuOpen(false)}
+                    className="text-slate-300 hover:text-teal-400"
+                  >
+                    Propósito
+                  </a>
+                  <a
+                    href="#funciones"
+                    onClick={() => setMobileMenuOpen(false)}
+                    className="text-slate-300 hover:text-teal-400"
+                  >
+                    Funciones
+                  </a>
+                  <a
+                    href="#acceso"
+                    onClick={() => setMobileMenuOpen(false)}
+                    className="text-slate-300 hover:text-teal-400"
+                  >
+                    Acceso
+                  </a>
+                  <hr className="border-slate-800" />
+                  <a
+                    href="candidatos_web.html"
+                    className="text-teal-400 flex items-center gap-2"
+                  >
+                    <i data-lucide="briefcase" className="w-4 h-4"></i> Portal
+                    de Empleo
+                  </a>
+                  <button className="bg-white text-slate-900 px-5 py-3 rounded-lg font-bold mt-2 w-full">
+                    Iniciar Red de Acceso
+                  </button>
+                </div>
+              )}
+            </header>
+
+            <section className="relative pt-32 pb-20 md:pt-48 md:pb-32 px-6 overflow-hidden min-h-screen flex items-center">
+              <div className="glow-bg top-0 left-1/2 -translate-x-1/2 -translate-y-1/4"></div>
+
+              <div className="max-w-7xl mx-auto grid md:grid-cols-2 gap-12 items-center relative z-10">
+                <div className="fade-in-up">
+                  <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-teal-500/10 border border-teal-500/20 text-teal-400 text-xs font-semibold tracking-wide uppercase mb-6">
+                    <span className="w-2 h-2 rounded-full bg-teal-400 animate-pulse"></span>
+                    Terminal de Mando Central
+                  </div>
+                  <h1 className="text-5xl md:text-6xl font-extrabold text-white leading-tight mb-6">
+                    Gestión y{" "}
+                    <span className="text-transparent bg-clip-text bg-gradient-to-r from-teal-400 to-blue-500">
+                      expansión operativa
+                    </span>{" "}
+                    total.
+                  </h1>
+                  <p className="text-lg text-slate-400 mb-8 max-w-xl leading-relaxed">
+                    Sistema exclusivo de administración estratégica, diseñado
+                    para líderes de organizaciones independientes. Estructure,
+                    gestione y amplíe toda su red de actividades desde una única
+                    interfaz centralizada.
+                  </p>
+                  <div className="flex flex-col sm:flex-row gap-4">
+                    <button className="bg-teal-500 hover:bg-teal-400 text-slate-900 px-8 py-4 rounded-lg font-bold text-lg transition-colors shadow-[0_0_20px_rgba(20,184,166,0.3)] flex items-center justify-center gap-2">
+                      <i data-lucide="terminal" className="w-5 h-5"></i>
+                      Acceder a la Red
+                    </button>
+                    <a
+                      href="#proposito"
+                      className="px-8 py-4 rounded-lg font-semibold text-white bg-slate-800 hover:bg-slate-700 border border-slate-700 transition-colors flex items-center justify-center gap-2"
+                    >
+                      Conocer más{" "}
+                      <i data-lucide="arrow-down" className="w-4 h-4"></i>
+                    </a>
+                  </div>
+                </div>
+
+                <div className="relative fade-in-up delay-200 hidden md:block perspective-1000">
+                  <div className="absolute inset-0 bg-gradient-to-tr from-teal-500/20 to-blue-500/20 blur-3xl rounded-full"></div>
+                  <div className="relative bg-slate-800/80 backdrop-blur-xl border border-slate-700 rounded-2xl shadow-2xl overflow-hidden transform rotate-y-[-5deg] rotate-x-[5deg]">
+                    <div className="bg-slate-900 px-4 py-3 border-b border-slate-700 flex items-center gap-2">
+                      <div className="w-3 h-3 rounded-full bg-red-500"></div>
+                      <div className="w-3 h-3 rounded-full bg-amber-500"></div>
+                      <div className="w-3 h-3 rounded-full bg-green-500"></div>
+                      <span className="ml-4 text-xs font-mono text-slate-400">
+                        root@theopenroad:~/terminal
+                      </span>
+                    </div>
+                    <div className="p-6 font-mono text-sm text-teal-400 leading-loose">
+                      <p className="text-slate-500">
+                        # Iniciando conexión segura con servidores centrales...
+                      </p>
+                      <p>[OK] Autenticación biométrica requerida</p>
+                      <p>[OK] Verificando credenciales de dirección...</p>
+                      <p className="text-slate-500">
+                        # Escaneando unidades operativas activas
+                      </p>
+                      <p className="text-blue-400">
+                        &gt; Unidad Norte: Rendimiento 94% | Almacén Lleno
+                      </p>
+                      <p className="text-blue-400">
+                        &gt; Unidad Sur: Requiere reabastecimiento crítico
+                      </p>
+                      <p className="text-amber-400">
+                        ! Alerta: Interrupción logística en sector 4
+                      </p>
+                      <p className="mt-4 animate-pulse">
+                        _ Esperando comandos del operador...
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </section>
+
+            <section
+              id="proposito"
+              className="py-24 bg-slate-800/50 border-y border-slate-800 relative"
+            >
+              <div className="max-w-7xl mx-auto px-6">
+                <div className="grid md:grid-cols-2 gap-16 items-center">
+                  <div className="order-2 md:order-1 relative">
+                    <div className="aspect-square max-w-md mx-auto relative">
+                      <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-32 h-32 bg-slate-900 border-2 border-teal-500 rounded-full flex items-center justify-center shadow-[0_0_30px_rgba(20,184,166,0.3)] z-10">
+                        <i
+                          data-lucide="cpu"
+                          className="w-12 h-12 text-teal-400"
+                        ></i>
+                      </div>
+
+                      <div className="absolute top-[10%] left-[20%] w-16 h-16 bg-slate-800 border border-slate-600 rounded-lg flex items-center justify-center">
+                        <i
+                          data-lucide="package"
+                          className="w-6 h-6 text-slate-400"
+                        ></i>
+                      </div>
+                      <div className="absolute top-[20%] right-[10%] w-20 h-20 bg-slate-800 border border-slate-600 rounded-lg flex items-center justify-center">
+                        <i
+                          data-lucide="truck"
+                          className="w-8 h-8 text-blue-400"
+                        ></i>
+                      </div>
+                      <div className="absolute bottom-[15%] left-[15%] w-20 h-20 bg-slate-800 border border-amber-500/50 rounded-lg flex items-center justify-center shadow-[0_0_15px_rgba(245,158,11,0.2)]">
+                        <i
+                          data-lucide="shield-alert"
+                          className="w-8 h-8 text-amber-500"
+                        ></i>
+                      </div>
+                      <div className="absolute bottom-[20%] right-[20%] w-16 h-16 bg-slate-800 border border-slate-600 rounded-lg flex items-center justify-center">
+                        <i
+                          data-lucide="pie-chart"
+                          className="w-6 h-6 text-slate-400"
+                        ></i>
+                      </div>
+
+                      <svg
+                        className="absolute inset-0 w-full h-full -z-10 opacity-30"
+                        viewBox="0 0 100 100"
+                      >
+                        <line
+                          x1="50"
+                          y1="50"
+                          x2="25"
+                          y2="18"
+                          stroke="#14b8a6"
+                          strokeWidth="0.5"
+                          strokeDasharray="2,2"
+                        />
+                        <line
+                          x1="50"
+                          y1="50"
+                          x2="80"
+                          y2="30"
+                          stroke="#14b8a6"
+                          strokeWidth="0.5"
+                        />
+                        <line
+                          x1="50"
+                          y1="50"
+                          x2="25"
+                          y2="75"
+                          stroke="#f59e0b"
+                          strokeWidth="0.5"
+                        />
+                        <line
+                          x1="50"
+                          y1="50"
+                          x2="70"
+                          y2="70"
+                          stroke="#14b8a6"
+                          strokeWidth="0.5"
+                          strokeDasharray="2,2"
+                        />
+                      </svg>
+                    </div>
+                  </div>
+
+                  <div className="order-1 md:order-2">
+                    <h2 className="text-3xl md:text-4xl font-bold mb-6 text-white">
+                      El centro neurológico de su organización.
+                    </h2>
+                    <p className="text-slate-400 text-lg leading-relaxed mb-6">
+                      TheOpenRoad es la herramienta central para planificar,
+                      adquirir y administrar diferentes unidades de negocio.
+                      Cada ubicación opera con capacidad y características
+                      específicas dictadas por la dirección.
+                    </p>
+                    <p className="text-slate-400 text-lg leading-relaxed mb-8">
+                      Facilitamos el{" "}
+                      <strong>control total del ciclo operativo</strong>: desde
+                      la definición y puesta en marcha de cada proyecto, el
+                      abastecimiento continuo de recursos de alto valor, hasta
+                      la organización de la red de distribución.
+                    </p>
+
+                    <div className="bg-slate-900 p-6 rounded-xl border border-slate-700 flex items-start gap-4">
+                      <div className="p-3 bg-teal-500/10 rounded-lg">
+                        <i
+                          data-lucide="crosshair"
+                          className="w-6 h-6 text-teal-400"
+                        ></i>
+                      </div>
+                      <div>
+                        <h4 className="text-white font-bold mb-2">
+                          Objetivo Estratégico
+                        </h4>
+                        <p className="text-sm text-slate-400">
+                          Transformar una estructura operativa básica en una red
+                          logística e industrial sólida, altamente diversificada
+                          y maximizada para la rentabilidad.
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </section>
+
+            <section id="funciones" className="py-24 relative">
+              <div className="max-w-7xl mx-auto px-6">
+                <div className="text-center mb-16 max-w-2xl mx-auto">
+                  <h2 className="text-3xl md:text-4xl font-bold mb-4 text-white">
+                    Capacidades del Sistema
+                  </h2>
+                  <p className="text-slate-400">
+                    Módulos especializados para cubrir cada fase de la cadena
+                    operativa y comercial de su organización independiente.
+                  </p>
+                </div>
+
+                <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+                  {features.map((feature, index) => (
+                    <div
+                      key={index}
+                      className={`feature-card bg-slate-800/40 border border-slate-700 rounded-2xl p-8 backdrop-blur-sm ${index === 3 ? "lg:col-start-1 lg:ml-auto lg:w-full" : ""} ${index === 4 ? "lg:col-start-2 lg:mr-auto lg:w-full" : ""}`}
+                    >
+                      <div className="w-12 h-12 bg-slate-700 rounded-xl flex items-center justify-center mb-6 shadow-inner">
+                        <i
+                          data-lucide={feature.icon}
+                          className="w-6 h-6 text-teal-400"
+                        ></i>
+                      </div>
+                      <h3 className="text-xl font-bold text-white mb-3">
+                        {feature.title}
+                      </h3>
+                      <p className="text-slate-400 text-sm leading-relaxed">
+                        {feature.desc}
+                      </p>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </section>
+
+            <section
+              id="acceso"
+              className="py-24 px-6 relative overflow-hidden"
+            >
+              <div className="absolute inset-0 bg-slate-950 z-0">
+                <div className="absolute top-0 w-full h-px bg-gradient-to-r from-transparent via-teal-500/50 to-transparent"></div>
+                <div className="absolute bottom-0 w-full h-px bg-gradient-to-r from-transparent via-teal-500/50 to-transparent"></div>
+              </div>
+
+              <div className="max-w-4xl mx-auto relative z-10 bg-slate-900 border border-slate-800 rounded-3xl p-8 md:p-12 text-center shadow-2xl">
+                <div className="w-20 h-20 bg-slate-800 border-2 border-slate-700 rounded-full flex items-center justify-center mx-auto mb-8 shadow-inner relative">
+                  <i data-lucide="lock" className="w-8 h-8 text-slate-300"></i>
+                  <div className="absolute top-1 right-1 w-3 h-3 bg-red-500 rounded-full animate-ping"></div>
+                  <div className="absolute top-1 right-1 w-3 h-3 bg-red-500 rounded-full"></div>
+                </div>
+
+                <h2 className="text-3xl font-bold text-white mb-6 uppercase tracking-widest">
+                  Protocolo de Acceso Restringido
+                </h2>
+
+                <p className="text-slate-400 text-lg mb-8 max-w-2xl mx-auto leading-relaxed">
+                  El uso de este sistema está{" "}
+                  <strong>reservado exclusivamente</strong> a quien ejerza la
+                  dirección del grupo y cuente con la sede principal
+                  establecida.
+                </p>
+                <div className="bg-amber-500/10 border border-amber-500/20 rounded-lg p-4 inline-block text-left max-w-md mx-auto mb-8">
+                  <p className="text-amber-400 text-sm flex items-start gap-3">
+                    <i
+                      data-lucide="alert-triangle"
+                      className="w-5 h-5 shrink-0"
+                    ></i>
+                    <span>
+                      La conexión remota no autorizada será bloqueada
+                      inmediatamente. El acceso requiere autenticación desde
+                      terminales habilitadas en instalaciones de la empresa.
+                    </span>
+                  </p>
+                </div>
+
+                <div>
+                  <button className="bg-white text-slate-900 px-8 py-3 rounded-lg font-bold hover:bg-slate-200 transition-colors">
+                    Solicitar Validación de Terminal
+                  </button>
+                </div>
+              </div>
+            </section>
+
+            <footer className="bg-slate-950 border-t border-slate-800 pt-16 pb-8">
+              <div className="max-w-7xl mx-auto px-6">
+                <div className="grid md:grid-cols-4 gap-8 mb-12">
+                  <div className="md:col-span-2">
+                    <div className="flex items-center gap-2 mb-4">
+                      <i
+                        data-lucide="compass"
+                        className="w-6 h-6 text-teal-400"
+                      ></i>
+                      <span className="text-lg font-bold text-white tracking-wider">
+                        TheOpenRoad
+                      </span>
+                    </div>
+                    <p className="text-sm text-slate-500 max-w-sm">
+                      Plataforma de comando y gestión operativa integral.
+                      Optimizando redes de negocio y producción desde una
+                      infraestructura digital centralizada.
+                    </p>
+                  </div>
+                  <div>
+                    <h4 className="text-white font-semibold mb-4 uppercase text-xs tracking-wider">
+                      Módulos
+                    </h4>
+                    <ul className="space-y-2 text-sm text-slate-500">
+                      <li>
+                        <a
+                          href="#"
+                          className="hover:text-teal-400 transition-colors"
+                        >
+                          Operaciones
+                        </a>
+                      </li>
+                      <li>
+                        <a
+                          href="#"
+                          className="hover:text-teal-400 transition-colors"
+                        >
+                          Logística de Red
+                        </a>
+                      </li>
+                      <li>
+                        <a
+                          href="#"
+                          className="hover:text-teal-400 transition-colors"
+                        >
+                          Inventario y Carga
+                        </a>
+                      </li>
+                      <li>
+                        <a
+                          href="#"
+                          className="hover:text-teal-400 transition-colors"
+                        >
+                          Seguridad Integral
+                        </a>
+                      </li>
+                    </ul>
+                  </div>
+                  <div>
+                    <h4 className="text-white font-semibold mb-4 uppercase text-xs tracking-wider">
+                      Compañía
+                    </h4>
+                    <ul className="space-y-2 text-sm text-slate-500">
+                      <li>
+                        <a
+                          href="#"
+                          className="hover:text-teal-400 transition-colors"
+                        >
+                          Acerca de nosotros
+                        </a>
+                      </li>
+                      <li>
+                        <a
+                          href="candidatos_web.html"
+                          className="hover:text-teal-400 transition-colors flex items-center gap-1.5"
+                        >
+                          Portal de Empleo{" "}
+                          <span className="bg-teal-500/20 text-teal-400 text-[10px] px-1.5 py-0.5 rounded uppercase font-bold">
+                            Contratando
+                          </span>
+                        </a>
+                      </li>
+                      <li>
+                        <a
+                          href="#"
+                          className="hover:text-teal-400 transition-colors"
+                        >
+                          Soporte Técnico
+                        </a>
+                      </li>
+                      <li>
+                        <a
+                          href="#"
+                          className="hover:text-teal-400 transition-colors"
+                        >
+                          Privacidad
+                        </a>
+                      </li>
+                    </ul>
+                  </div>
+                </div>
+                <div className="pt-8 border-t border-slate-800 text-center text-xs text-slate-600 flex flex-col md:flex-row justify-between items-center gap-4">
+                  <p>
+                    &copy; {new Date().getFullYear()} TheOpenRoad - Sistema
+                    Operativo Central. Todos los derechos reservados.
+                  </p>
+                  <div className="flex items-center gap-2">
+                    <div className="w-2 h-2 rounded-full bg-green-500"></div>
+                    <span>Servidores Centrales En Línea</span>
+                  </div>
+                </div>
+              </div>
+            </footer>
+          </div>
+        );
+      };
+
+      const root = ReactDOM.createRoot(document.getElementById("root"));
+      root.render(<LandingPage />);
+    </script>
+  </body>
+</html>
