@@ -1,11 +1,10 @@
 from fastapi import FastAPI, Depends, HTTPException, File, UploadFile, Form
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
-from sqlalchemy import create_engine, Column, Integer, String, Text, Enum, ForeignKey, TIMESTAMP
+from sqlalchemy import create_engine, Column, Integer, String, Text, Enum
 from sqlalchemy.orm import declarative_base, sessionmaker, Session
 from pydantic import BaseModel
 from typing import List, Optional
-from datetime import datetime
 import os
 import shutil
 
@@ -40,6 +39,13 @@ class DBCandidato(Base):
     habilidades = Column(Text, nullable=True)
 
 
+class DBCuestionario(Base):
+    __tablename__ = "cuestionarios"
+    id = Column(Integer, primary_key=True, index=True)
+    titulo = Column(String(100), nullable=False)
+    preguntas = Column(Text, nullable=False)
+
+
 class VacanteCreate(BaseModel):
     titulo: str
     descripcion: str
@@ -72,6 +78,18 @@ class CandidatoResponse(BaseModel):
 class CandidatoEvaluacion(BaseModel):
     estado: str
     comentarios: str
+
+
+class CuestionarioCreate(BaseModel):
+    titulo: str
+    preguntas: str
+
+
+class CuestionarioResponse(CuestionarioCreate):
+    id: int
+
+    class Config:
+        from_attributes = True
 
 
 app = FastAPI(
@@ -150,7 +168,7 @@ def registrar_candidato(
     nombre_completo: str = Form(...),
     email: str = Form(...),
     origen: str = Form(...),
-    habilidades: str = Form(""),
+    habilidades: Optional[str] = Form(None),
     id_vacante: Optional[int] = Form(None),
     cv: UploadFile = File(None),
     db: Session = Depends(get_db)
@@ -169,12 +187,14 @@ def registrar_candidato(
             shutil.copyfileobj(cv.file, buffer)
         ruta_archivo = f"/{ruta_fisica}"
 
+    habs_limpias = habilidades if habilidades else ""
+
     nuevo_candidato = DBCandidato(
         nombre_completo=nombre_completo,
         email=email,
         origen=origen,
         url_cv=ruta_archivo,
-        habilidades=habilidades,
+        habilidades=habs_limpias,
         id_vacante=id_vacante
     )
     db.add(nuevo_candidato)
@@ -189,7 +209,7 @@ def actualizar_candidato(
     nombre_completo: str = Form(...),
     email: str = Form(...),
     origen: str = Form(...),
-    habilidades: str = Form(""),
+    habilidades: Optional[str] = Form(None),
     id_vacante: Optional[int] = Form(None),
     cv: UploadFile = File(None),
     db: Session = Depends(get_db)
@@ -209,7 +229,7 @@ def actualizar_candidato(
     candidato.nombre_completo = nombre_completo
     candidato.email = email
     candidato.origen = origen
-    candidato.habilidades = habilidades
+    candidato.habilidades = habilidades if habilidades else ""
     candidato.id_vacante = id_vacante
 
     if cv and cv.filename:
@@ -256,6 +276,34 @@ def evaluar_candidato(candidato_id: int, eval_data: CandidatoEvaluacion, db: Ses
     db.commit()
     db.refresh(candidato)
     return candidato
+
+
+@app.post("/cuestionarios/", response_model=CuestionarioResponse, tags=["Cuestionarios"])
+def crear_cuestionario(cuestionario: CuestionarioCreate, db: Session = Depends(get_db)):
+    db_cuestionario = DBCuestionario(
+        titulo=cuestionario.titulo, preguntas=cuestionario.preguntas)
+    db.add(db_cuestionario)
+    db.commit()
+    db.refresh(db_cuestionario)
+    return db_cuestionario
+
+
+@app.get("/cuestionarios/", response_model=List[CuestionarioResponse], tags=["Cuestionarios"])
+def listar_cuestionarios(skip: int = 0, limit: int = 100, db: Session = Depends(get_db)):
+    cuestionarios = db.query(DBCuestionario).offset(skip).limit(limit).all()
+    return cuestionarios
+
+
+@app.delete("/cuestionarios/{cuestionario_id}", tags=["Cuestionarios"])
+def eliminar_cuestionario(cuestionario_id: int, db: Session = Depends(get_db)):
+    cuestionario = db.query(DBCuestionario).filter(
+        DBCuestionario.id == cuestionario_id).first()
+    if not cuestionario:
+        raise HTTPException(
+            status_code=404, detail="Cuestionario no encontrado")
+    db.delete(cuestionario)
+    db.commit()
+    return {"mensaje": "Cuestionario eliminado exitosamente"}
 
 
 if __name__ == "__main__":
