@@ -8,18 +8,13 @@ from typing import List, Optional
 import os
 import shutil
 
-# ==========================================
-# 1. CONFIGURACIÓN DE BASE DE DATOS
-# ==========================================
 SQLALCHEMY_DATABASE_URL = "mysql+pymysql://root:@localhost:3306/ats_sistema"
 
 engine = create_engine(SQLALCHEMY_DATABASE_URL)
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 Base = declarative_base()
 
-# ==========================================
-# 2. MODELOS SQLALCHEMY (Base de Datos)
-# ==========================================
+
 class DBVacante(Base):
     __tablename__ = "vacantes"
     id = Column(Integer, primary_key=True, index=True)
@@ -35,12 +30,13 @@ class DBCandidato(Base):
     nombre_completo = Column(String(100), nullable=False)
     email = Column(String(100), unique=True, index=True)
     telefono = Column(String(20))
-    origen = Column(Enum('Correo', 'WhatsApp', 'Impreso', 'Portal Web', 'Referido'), nullable=False)
+    origen = Column(Enum('Correo', 'WhatsApp', 'Impreso',
+                    'Portal Web', 'Referido'), nullable=False)
     url_cv = Column(String(255))
     estado = Column(String(50), default="Recibido")
     historial = Column(Text, default="CV Registrado en MySQL")
-    id_vacante = Column(Integer, nullable=True) 
-    habilidades = Column(Text, nullable=True)   
+    id_vacante = Column(Integer, nullable=True)
+    habilidades = Column(Text, nullable=True)
 
 
 class DBCuestionario(Base):
@@ -50,19 +46,19 @@ class DBCuestionario(Base):
     preguntas = Column(Text, nullable=False)
 
 
-# ==========================================
-# 3. ESQUEMAS PYDANTIC (Validación de Datos)
-# ==========================================
 class VacanteCreate(BaseModel):
     titulo: str
     descripcion: str
     estado: Optional[str] = "Abierta"
     id_creador: int
 
+
 class VacanteResponse(VacanteCreate):
     id: int
+
     class Config:
         from_attributes = True
+
 
 class CandidatoResponse(BaseModel):
     id: int
@@ -74,26 +70,28 @@ class CandidatoResponse(BaseModel):
     id_vacante: Optional[int] = None
     estado: Optional[str] = "Recibido"
     historial: Optional[str] = "CV Registrado en MySQL"
+
     class Config:
         from_attributes = True
+
 
 class CandidatoEvaluacion(BaseModel):
     estado: str
     comentarios: str
 
+
 class CuestionarioCreate(BaseModel):
     titulo: str
     preguntas: str
 
+
 class CuestionarioResponse(CuestionarioCreate):
     id: int
+
     class Config:
         from_attributes = True
 
 
-# ==========================================
-# 4. CONFIGURACIÓN FASTAPI Y CORS
-# ==========================================
 app = FastAPI(
     title="API Sistema ATS",
     description="Backend para la automatización de reclutamiento y selección.",
@@ -108,7 +106,7 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# --- CREACIÓN DE CARPETA Y RUTA PARA MOSTRAR PDFs ---
+
 os.makedirs("uploads", exist_ok=True)
 app.mount("/uploads", StaticFiles(directory="uploads"), name="uploads")
 
@@ -121,15 +119,11 @@ def get_db():
         db.close()
 
 
-# ==========================================
-# 5. RUTAS (ENDPOINTS)
-# ==========================================
 @app.get("/")
 def read_root():
     return {"mensaje": "Bienvenido a la API del Sistema ATS."}
 
 
-# --- RUTAS: VACANTES ---
 @app.post("/vacantes/", response_model=VacanteResponse, tags=["Vacantes"])
 def crear_vacante(vacante: VacanteCreate, db: Session = Depends(get_db)):
     db_vacante = DBVacante(**vacante.model_dump())
@@ -138,24 +132,27 @@ def crear_vacante(vacante: VacanteCreate, db: Session = Depends(get_db)):
     db.refresh(db_vacante)
     return db_vacante
 
+
 @app.get("/vacantes/", response_model=List[VacanteResponse], tags=["Vacantes"])
 def listar_vacantes(skip: int = 0, limit: int = 100, db: Session = Depends(get_db)):
     vacantes = db.query(DBVacante).offset(skip).limit(limit).all()
     return vacantes
+
 
 @app.put("/vacantes/{vacante_id}", response_model=VacanteResponse, tags=["Vacantes"])
 def actualizar_vacante(vacante_id: int, vacante_actualizada: VacanteCreate, db: Session = Depends(get_db)):
     vacante = db.query(DBVacante).filter(DBVacante.id == vacante_id).first()
     if not vacante:
         raise HTTPException(status_code=404, detail="Vacante no encontrada")
-    
+
     vacante.titulo = vacante_actualizada.titulo
     vacante.descripcion = vacante_actualizada.descripcion
     vacante.estado = vacante_actualizada.estado
-    
+
     db.commit()
     db.refresh(vacante)
     return vacante
+
 
 @app.delete("/vacantes/{vacante_id}", tags=["Vacantes"])
 def eliminar_vacante(vacante_id: int, db: Session = Depends(get_db)):
@@ -167,7 +164,6 @@ def eliminar_vacante(vacante_id: int, db: Session = Depends(get_db)):
     return {"mensaje": "Vacante eliminada exitosamente"}
 
 
-# --- RUTAS: CANDIDATOS ---
 @app.post("/candidatos/", response_model=CandidatoResponse, tags=["Candidatos"])
 def registrar_candidato(
     nombre_completo: str = Form(...),
@@ -178,9 +174,11 @@ def registrar_candidato(
     cv: UploadFile = File(None),
     db: Session = Depends(get_db)
 ):
-    db_candidato = db.query(DBCandidato).filter(DBCandidato.email == email).first()
+    db_candidato = db.query(DBCandidato).filter(
+        DBCandidato.email == email).first()
     if db_candidato:
-        raise HTTPException(status_code=400, detail="El email ya está registrado")
+        raise HTTPException(
+            status_code=400, detail="El email ya está registrado")
 
     ruta_archivo = None
     if cv and cv.filename:
@@ -189,7 +187,7 @@ def registrar_candidato(
         with open(ruta_fisica, "wb") as buffer:
             shutil.copyfileobj(cv.file, buffer)
         ruta_archivo = f"/{ruta_fisica}"
-        
+
     habs_limpias = habilidades if habilidades else ""
 
     nuevo_candidato = DBCandidato(
@@ -205,6 +203,7 @@ def registrar_candidato(
     db.refresh(nuevo_candidato)
     return nuevo_candidato
 
+
 @app.put("/candidatos/{candidato_id}", response_model=CandidatoResponse, tags=["Candidatos"])
 def actualizar_candidato(
     candidato_id: int,
@@ -216,14 +215,17 @@ def actualizar_candidato(
     cv: UploadFile = File(None),
     db: Session = Depends(get_db)
 ):
-    candidato = db.query(DBCandidato).filter(DBCandidato.id == candidato_id).first()
+    candidato = db.query(DBCandidato).filter(
+        DBCandidato.id == candidato_id).first()
     if not candidato:
         raise HTTPException(status_code=404, detail="Candidato no encontrado")
 
     if candidato.email != email:
-        email_existente = db.query(DBCandidato).filter(DBCandidato.email == email).first()
+        email_existente = db.query(DBCandidato).filter(
+            DBCandidato.email == email).first()
         if email_existente:
-             raise HTTPException(status_code=400, detail="El nuevo email ya está registrado por otro candidato")
+            raise HTTPException(
+                status_code=400, detail="El nuevo email ya está registrado por otro candidato")
 
     candidato.nombre_completo = nombre_completo
     candidato.email = email
@@ -242,23 +244,28 @@ def actualizar_candidato(
     db.refresh(candidato)
     return candidato
 
+
 @app.get("/candidatos/", response_model=List[CandidatoResponse], tags=["Candidatos"])
 def listar_candidatos(skip: int = 0, limit: int = 100, db: Session = Depends(get_db)):
     candidatos = db.query(DBCandidato).offset(skip).limit(limit).all()
     return candidatos
 
+
 @app.delete("/candidatos/{candidato_id}", tags=["Candidatos"])
 def eliminar_candidato(candidato_id: int, db: Session = Depends(get_db)):
-    candidato = db.query(DBCandidato).filter(DBCandidato.id == candidato_id).first()
+    candidato = db.query(DBCandidato).filter(
+        DBCandidato.id == candidato_id).first()
     if not candidato:
         raise HTTPException(status_code=404, detail="Candidato no encontrado")
     db.delete(candidato)
     db.commit()
     return {"mensaje": "Candidato eliminado exitosamente"}
 
+
 @app.put("/candidatos/{candidato_id}/evaluar", tags=["Candidatos"])
 def evaluar_candidato(candidato_id: int, eval_data: CandidatoEvaluacion, db: Session = Depends(get_db)):
-    candidato = db.query(DBCandidato).filter(DBCandidato.id == candidato_id).first()
+    candidato = db.query(DBCandidato).filter(
+        DBCandidato.id == candidato_id).first()
     if not candidato:
         raise HTTPException(status_code=404, detail="Candidato no encontrado")
 
@@ -272,38 +279,45 @@ def evaluar_candidato(candidato_id: int, eval_data: CandidatoEvaluacion, db: Ses
     return candidato
 
 
-# --- RUTAS: CUESTIONARIOS ---
 @app.post("/cuestionarios/", response_model=CuestionarioResponse, tags=["Cuestionarios"])
 def crear_cuestionario(cuestionario: CuestionarioCreate, db: Session = Depends(get_db)):
-    db_cuestionario = DBCuestionario(titulo=cuestionario.titulo, preguntas=cuestionario.preguntas)
+    db_cuestionario = DBCuestionario(
+        titulo=cuestionario.titulo, preguntas=cuestionario.preguntas)
     db.add(db_cuestionario)
     db.commit()
     db.refresh(db_cuestionario)
     return db_cuestionario
+
 
 @app.get("/cuestionarios/", response_model=List[CuestionarioResponse], tags=["Cuestionarios"])
 def listar_cuestionarios(skip: int = 0, limit: int = 100, db: Session = Depends(get_db)):
     cuestionarios = db.query(DBCuestionario).offset(skip).limit(limit).all()
     return cuestionarios
 
+
 @app.put("/cuestionarios/{cuestionario_id}", response_model=CuestionarioResponse, tags=["Cuestionarios"])
 def actualizar_cuestionario(cuestionario_id: int, cuestionario_actualizado: CuestionarioCreate, db: Session = Depends(get_db)):
-    cuestionario = db.query(DBCuestionario).filter(DBCuestionario.id == cuestionario_id).first()
+    cuestionario = db.query(DBCuestionario).filter(
+        DBCuestionario.id == cuestionario_id).first()
     if not cuestionario:
-        raise HTTPException(status_code=404, detail="Cuestionario no encontrado")
-    
+        raise HTTPException(
+            status_code=404, detail="Cuestionario no encontrado")
+
     cuestionario.titulo = cuestionario_actualizado.titulo
     cuestionario.preguntas = cuestionario_actualizado.preguntas
-    
+
     db.commit()
     db.refresh(cuestionario)
     return cuestionario
 
+
 @app.delete("/cuestionarios/{cuestionario_id}", tags=["Cuestionarios"])
 def eliminar_cuestionario(cuestionario_id: int, db: Session = Depends(get_db)):
-    cuestionario = db.query(DBCuestionario).filter(DBCuestionario.id == cuestionario_id).first()
+    cuestionario = db.query(DBCuestionario).filter(
+        DBCuestionario.id == cuestionario_id).first()
     if not cuestionario:
-        raise HTTPException(status_code=404, detail="Cuestionario no encontrado")
+        raise HTTPException(
+            status_code=404, detail="Cuestionario no encontrado")
     db.delete(cuestionario)
     db.commit()
     return {"mensaje": "Cuestionario eliminado exitosamente"}
