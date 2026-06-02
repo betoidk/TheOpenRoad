@@ -1,0 +1,509 @@
+<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Trabaja con Nosotros - TheOpenRoad</title>
+
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script
+      crossorigin
+      src="https://unpkg.com/react@18/umd/react.production.min.js"
+    ></script>
+    <script
+      crossorigin
+      src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"
+    ></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <script src="https://unpkg.com/lucide@latest"></script>
+
+    <style>
+      @import url("https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap");
+      body {
+        font-family: "Inter", sans-serif;
+        background-color: #0f172a;
+        color: #f8fafc;
+        overflow-x: hidden;
+      }
+      ::-webkit-scrollbar {
+        width: 8px;
+        height: 8px;
+      }
+      ::-webkit-scrollbar-track {
+        background: #0f172a;
+      }
+      ::-webkit-scrollbar-thumb {
+        background: #334155;
+        border-radius: 4px;
+      }
+      ::-webkit-scrollbar-thumb:hover {
+        background: #475569;
+      }
+
+      .job-card {
+        transition: all 0.3s ease;
+      }
+      .job-card:hover {
+        transform: translateY(-5px);
+        box-shadow:
+          0 20px 25px -5px rgba(0, 0, 0, 0.5),
+          0 8px 10px -6px rgba(0, 0, 0, 0.5);
+        border-color: #14b8a6;
+      }
+
+      .glow-bg-subtle {
+        position: absolute;
+        width: 500px;
+        height: 500px;
+        background: radial-gradient(
+          circle,
+          rgba(20, 184, 166, 0.1) 0%,
+          rgba(15, 23, 42, 0) 70%
+        );
+        border-radius: 50%;
+        z-index: 0;
+        pointer-events: none;
+      }
+    </style>
+  </head>
+  <body>
+    <div id="root"></div>
+
+    <script type="text/babel">
+      const { useState, useEffect } = React;
+
+      const API_URL = "http://127.0.0.1:8000";
+
+      const PortalEmpleo = () => {
+        const [vacantes, setVacantes] = useState([]);
+        const [cargando, setCargando] = useState(true);
+        const [error, setError] = useState(null);
+
+        const [vacanteSeleccionada, setVacanteSeleccionada] = useState(null);
+        const [mostrarFormulario, setMostrarFormulario] = useState(false);
+        const [estadoEnvio, setEstadoEnvio] = useState("idle");
+        const [mensajeErrorEnvio, setMensajeErrorEnvio] = useState("");
+
+        const [formData, setFormData] = useState({
+          nombre_completo: "",
+          email: "",
+          habilidades: "",
+          cvFile: null,
+        });
+
+        useEffect(() => {
+          cargarVacantesActivas();
+        }, []);
+
+        useEffect(() => {
+          if (window.lucide) {
+            window.lucide.createIcons();
+          }
+        });
+
+        const cargarVacantesActivas = async () => {
+          setCargando(true);
+          try {
+            const response = await fetch(`${API_URL}/vacantes/`);
+            if (!response.ok)
+              throw new Error("No se pudieron cargar las vacantes");
+
+            const data = await response.json();
+            const vacantesAbiertas = data.filter((v) => v.estado === "Abierta");
+            setVacantes(vacantesAbiertas);
+          } catch (err) {
+            console.error(err);
+            setError(
+              "Estamos teniendo problemas para conectar con el servidor. Por favor, intenta más tarde.",
+            );
+          } finally {
+            setCargando(false);
+          }
+        };
+
+        const handleInputChange = (e) => {
+          const { name, value } = e.target;
+          setFormData({ ...formData, [name]: value });
+        };
+
+        const handleFileChange = (e) => {
+          setFormData({ ...formData, cvFile: e.target.files[0] });
+        };
+
+        const iniciarPostulacion = (vacante) => {
+          setVacanteSeleccionada(vacante);
+          setMostrarFormulario(true);
+          setEstadoEnvio("idle");
+          setFormData({
+            nombre_completo: "",
+            email: "",
+            habilidades: "",
+            cvFile: null,
+          });
+        };
+
+        const handleSubmit = async (e) => {
+          e.preventDefault();
+          setEstadoEnvio("enviando");
+
+          try {
+            const data = new FormData();
+            data.append("nombre_completo", formData.nombre_completo);
+            data.append("email", formData.email);
+            data.append("origen", "Portal Web");
+            data.append("habilidades", formData.habilidades);
+
+            if (vacanteSeleccionada && vacanteSeleccionada.id) {
+              data.append("id_vacante", vacanteSeleccionada.id);
+            }
+
+            if (formData.cvFile) {
+              data.append("cv", formData.cvFile);
+            }
+
+            const response = await fetch(`${API_URL}/candidatos/`, {
+              method: "POST",
+              body: data,
+            });
+
+            if (response.ok) {
+              setEstadoEnvio("exito");
+            } else {
+              const errorData = await response.json();
+              setMensajeErrorEnvio(
+                errorData.detail || "Error al procesar tu solicitud.",
+              );
+              setEstadoEnvio("error");
+            }
+          } catch (error) {
+            console.error("Error en el envío:", error);
+            setMensajeErrorEnvio("Error de conexión. Intenta nuevamente.");
+            setEstadoEnvio("error");
+          }
+        };
+
+        return (
+          <div className="min-h-screen flex flex-col relative bg-slate-900 text-slate-300">
+            <header className="bg-slate-900/95 backdrop-blur-md border-b border-slate-800 py-4 px-6 md:px-12 flex justify-between items-center shadow-lg z-20 sticky top-0">
+              <div className="flex items-center gap-2">
+                <i data-lucide="compass" className="w-8 h-8 text-teal-400"></i>
+                <div className="flex items-center gap-3">
+                  <span className="text-xl font-bold tracking-wider text-white">
+                    TheOpenRoad
+                  </span>
+                  <span className="px-2 py-0.5 bg-teal-500/10 border border-teal-500/20 text-teal-400 text-[10px] uppercase font-bold tracking-wider rounded-sm hidden sm:block">
+                    Careers
+                  </span>
+                </div>
+              </div>
+              <nav className="hidden md:block">
+                <a
+                  href="web.html"
+                  className="text-sm font-medium text-slate-400 hover:text-teal-400 transition-colors flex items-center gap-2"
+                >
+                  <i data-lucide="arrow-left" className="w-4 h-4"></i> Volver al
+                  sitio principal
+                </a>
+              </nav>
+            </header>
+
+            <section className="pt-24 pb-20 px-6 text-center relative overflow-hidden flex-shrink-0">
+              <div className="glow-bg-subtle top-0 left-1/2 -translate-x-1/2 -translate-y-1/4"></div>
+
+              <div className="max-w-3xl mx-auto relative z-10">
+                <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-teal-500/10 border border-teal-500/20 text-teal-400 text-xs font-semibold tracking-wide uppercase mb-6">
+                  <span className="w-2 h-2 rounded-full bg-teal-400 animate-pulse"></span>
+                  Portal de Reclutamiento Operativo
+                </div>
+                <h2 className="text-4xl md:text-5xl font-extrabold mb-6 text-white tracking-tight">
+                  Únete a nuestra{" "}
+                  <span className="text-transparent bg-clip-text bg-gradient-to-r from-teal-400 to-blue-500">
+                    red central
+                  </span>
+                </h2>
+                <p className="text-lg text-slate-400 mb-8 max-w-2xl mx-auto leading-relaxed">
+                  Buscamos mentes estratégicas y perfiles altamente operativos.
+                  Descubre nuestras oportunidades laborales y sé parte del
+                  engranaje que impulsa TheOpenRoad.
+                </p>
+              </div>
+            </section>
+
+            <main className="flex-1 w-full max-w-5xl mx-auto px-6 pb-20 relative z-20">
+              <div className="bg-slate-800/40 backdrop-blur-sm rounded-2xl shadow-2xl border border-slate-700 p-8 min-h-[400px]">
+                <div className="flex items-center gap-3 mb-8 border-b border-slate-700 pb-4">
+                  <div className="p-2 bg-slate-800 rounded-lg shadow-inner border border-slate-700">
+                    <i
+                      data-lucide="briefcase"
+                      className="w-6 h-6 text-teal-400"
+                    ></i>
+                  </div>
+                  <h3 className="text-2xl font-bold text-white">
+                    Vacantes Disponibles
+                  </h3>
+                </div>
+
+                {cargando ? (
+                  <div className="flex flex-col items-center justify-center py-20 text-slate-400">
+                    <div className="w-10 h-10 border-4 border-slate-700 border-t-teal-500 rounded-full animate-spin mb-4"></div>
+                    <p className="font-mono text-sm">
+                      Escaneando base de datos central...
+                    </p>
+                  </div>
+                ) : error ? (
+                  <div className="bg-red-500/10 text-red-400 p-6 rounded-xl border border-red-500/20 flex items-start gap-4">
+                    <i
+                      data-lucide="alert-circle"
+                      className="w-6 h-6 shrink-0 mt-0.5"
+                    ></i>
+                    <div>
+                      <h4 className="font-semibold mb-1 text-red-300">
+                        Error de conexión
+                      </h4>
+                      <p className="text-sm">{error}</p>
+                    </div>
+                  </div>
+                ) : vacantes.length === 0 ? (
+                  <div className="text-center py-20">
+                    <div className="bg-slate-800 w-20 h-20 rounded-full flex items-center justify-center mx-auto mb-6 border border-slate-700 shadow-inner">
+                      <i
+                        data-lucide="inbox"
+                        className="w-10 h-10 text-slate-500"
+                      ></i>
+                    </div>
+                    <h4 className="text-xl font-bold text-white mb-3">
+                      Sin operaciones abiertas
+                    </h4>
+                    <p className="text-slate-400 max-w-md mx-auto mb-8">
+                      Actualmente nuestra red se encuentra al máximo de su
+                      capacidad. Constantemente expandimos nuestras operaciones,
+                      vuelve pronto.
+                    </p>
+
+                    <button
+                      onClick={() =>
+                        iniciarPostulacion({
+                          titulo: "Candidatura General",
+                          id: null,
+                        })
+                      }
+                      className="inline-flex items-center gap-2 text-slate-900 bg-teal-500 hover:bg-teal-400 font-bold px-6 py-3 rounded-lg transition-all shadow-[0_0_15px_rgba(20,184,166,0.3)]"
+                    >
+                      Dejar CV en Archivo Central{" "}
+                      <i data-lucide="arrow-right" className="w-4 h-4"></i>
+                    </button>
+                  </div>
+                ) : (
+                  <div className="grid gap-6 md:grid-cols-2">
+                    {vacantes.map((vacante) => (
+                      <div
+                        key={vacante.id}
+                        className="job-card bg-slate-900/80 border border-slate-700 rounded-xl p-6 flex flex-col h-full"
+                      >
+                        <div className="flex-1">
+                          <div className="flex justify-between items-start mb-4">
+                            <h4 className="text-xl font-bold text-white leading-tight">
+                              {vacante.titulo}
+                            </h4>
+                            <span className="bg-teal-500/10 text-teal-400 border border-teal-500/20 text-[10px] uppercase tracking-widest font-bold px-2.5 py-1 rounded-full whitespace-nowrap">
+                              Activa
+                            </span>
+                          </div>
+                          <p className="text-slate-400 text-sm mb-6 line-clamp-3">
+                            {vacante.descripcion}
+                          </p>
+                        </div>
+                        <div className="pt-5 border-t border-slate-800 mt-auto flex items-center justify-between">
+                          <span className="text-xs text-slate-500 font-mono flex items-center gap-1.5">
+                            <i
+                              data-lucide="map-pin"
+                              className="w-3.5 h-3.5"
+                            ></i>{" "}
+                            Red TheOpenRoad
+                          </span>
+                          <button
+                            onClick={() => iniciarPostulacion(vacante)}
+                            className="bg-slate-800 hover:bg-teal-600 text-white border border-slate-600 hover:border-teal-500 px-5 py-2 rounded-lg text-sm font-medium transition-colors flex items-center gap-2"
+                          >
+                            Postularme{" "}
+                            <i
+                              data-lucide="chevron-right"
+                              className="w-4 h-4"
+                            ></i>
+                          </button>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            </main>
+
+            <footer className="bg-slate-950 text-slate-500 py-8 text-center text-sm border-t border-slate-800 mt-auto">
+              <p>
+                &copy; {new Date().getFullYear()} TheOpenRoad SA de CV. Todos
+                los derechos reservados.
+              </p>
+            </footer>
+
+            {mostrarFormulario && (
+              <div className="fixed inset-0 bg-slate-950/80 backdrop-blur-md flex items-center justify-center z-50 p-4 overflow-y-auto">
+                <div className="bg-slate-900 border border-slate-700 rounded-2xl shadow-2xl w-full max-w-xl overflow-hidden relative my-8">
+                  <button
+                    onClick={() => setMostrarFormulario(false)}
+                    className="absolute top-4 right-4 text-slate-500 hover:text-white hover:bg-slate-800 p-1.5 rounded-full transition-colors z-10"
+                  >
+                    <i data-lucide="x" className="w-5 h-5"></i>
+                  </button>
+
+                  <div className="px-8 py-6 border-b border-slate-800 bg-slate-800/50">
+                    <p className="text-xs font-bold text-teal-500 uppercase tracking-wider mb-1">
+                      Iniciando protocolo de postulación
+                    </p>
+                    <h3 className="text-2xl font-bold text-white">
+                      {vacanteSeleccionada
+                        ? vacanteSeleccionada.titulo
+                        : "Candidatura General"}
+                    </h3>
+                  </div>
+
+                  <div className="p-8">
+                    {estadoEnvio === "exito" ? (
+                      <div className="text-center py-8">
+                        <div className="w-20 h-20 bg-teal-500/10 border-2 border-teal-500/30 text-teal-400 rounded-full flex items-center justify-center mx-auto mb-6">
+                          <i data-lucide="check" className="w-10 h-10"></i>
+                        </div>
+                        <h4 className="text-2xl font-bold text-white mb-2">
+                          Transmisión Exitosa
+                        </h4>
+                        <p className="text-slate-400 mb-8 max-w-sm mx-auto">
+                          Tus datos han sido encriptados y enviados a nuestro
+                          servidor central. El equipo de evaluación revisará tu
+                          perfil en breve.
+                        </p>
+                        <button
+                          onClick={() => setMostrarFormulario(false)}
+                          className="bg-slate-800 hover:bg-slate-700 border border-slate-600 text-white px-8 py-3 rounded-lg font-medium transition-colors"
+                        >
+                          Cerrar terminal
+                        </button>
+                      </div>
+                    ) : (
+                      <form onSubmit={handleSubmit} className="space-y-5">
+                        {estadoEnvio === "error" && (
+                          <div className="p-4 bg-red-500/10 text-red-400 text-sm rounded-lg border border-red-500/20 flex items-start gap-2 mb-4">
+                            <i
+                              data-lucide="alert-triangle"
+                              className="w-5 h-5 shrink-0"
+                            ></i>
+                            <p>{mensajeErrorEnvio}</p>
+                          </div>
+                        )}
+
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+                          <div>
+                            <label className="block text-sm font-semibold text-slate-300 mb-1.5">
+                              Nombre Completo *
+                            </label>
+                            <input
+                              type="text"
+                              name="nombre_completo"
+                              required
+                              value={formData.nombre_completo}
+                              onChange={handleInputChange}
+                              placeholder="Ej. Operador Alpha"
+                              className="w-full px-4 py-2.5 bg-slate-950 border border-slate-700 rounded-lg text-white placeholder-slate-600 focus:bg-slate-900 focus:outline-none focus:border-teal-500 focus:ring-1 focus:ring-teal-500 transition-all"
+                            />
+                          </div>
+                          <div>
+                            <label className="block text-sm font-semibold text-slate-300 mb-1.5">
+                              Correo Electrónico *
+                            </label>
+                            <input
+                              type="email"
+                              name="email"
+                              required
+                              value={formData.email}
+                              onChange={handleInputChange}
+                              placeholder="contacto@red.com"
+                              className="w-full px-4 py-2.5 bg-slate-950 border border-slate-700 rounded-lg text-white placeholder-slate-600 focus:bg-slate-900 focus:outline-none focus:border-teal-500 focus:ring-1 focus:ring-teal-500 transition-all"
+                            />
+                          </div>
+                        </div>
+
+                        <div>
+                          <label className="block text-sm font-semibold text-slate-300 mb-1.5">
+                            Habilidades Operativas
+                          </label>
+                          <input
+                            type="text"
+                            name="habilidades"
+                            value={formData.habilidades}
+                            onChange={handleInputChange}
+                            placeholder="Ej. Logística, Python, Gestión (separadas por coma)"
+                            className="w-full px-4 py-2.5 bg-slate-950 border border-slate-700 rounded-lg text-white placeholder-slate-600 focus:bg-slate-900 focus:outline-none focus:border-teal-500 focus:ring-1 focus:ring-teal-500 transition-all"
+                          />
+                        </div>
+
+                        <div className="bg-slate-900 p-6 border-2 border-slate-700 border-dashed rounded-xl text-center hover:bg-slate-800 hover:border-teal-500/50 transition-colors relative group">
+                          <input
+                            type="file"
+                            required
+                            accept=".pdf,.doc,.docx"
+                            onChange={handleFileChange}
+                            className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10"
+                          />
+                          <div className="flex flex-col items-center justify-center gap-2 text-slate-400 group-hover:text-teal-400 transition-colors">
+                            <i data-lucide="file-up" className="w-8 h-8"></i>
+                            <span className="font-semibold text-slate-300 group-hover:text-white">
+                              {formData.cvFile
+                                ? formData.cvFile.name
+                                : "Anexar Expediente (CV) *"}
+                            </span>
+                            <span className="text-xs opacity-70">
+                              Sistemas admitidos: PDF, DOC, DOCX
+                            </span>
+                          </div>
+                        </div>
+
+                        <div className="pt-6 border-t border-slate-800 mt-6 flex justify-end gap-3">
+                          <button
+                            type="button"
+                            onClick={() => setMostrarFormulario(false)}
+                            className="px-6 py-2.5 text-sm font-semibold text-slate-400 hover:text-white hover:bg-slate-800 rounded-lg transition-colors"
+                          >
+                            Abortar
+                          </button>
+                          <button
+                            type="submit"
+                            disabled={estadoEnvio === "enviando"}
+                            className="px-8 py-2.5 bg-teal-500 hover:bg-teal-400 text-slate-900 text-sm font-bold rounded-lg shadow-[0_0_15px_rgba(20,184,166,0.2)] transition-colors flex items-center gap-2 disabled:opacity-70 disabled:cursor-not-allowed"
+                          >
+                            {estadoEnvio === "enviando" ? (
+                              <>
+                                <div className="w-4 h-4 border-2 border-slate-900 border-t-transparent rounded-full animate-spin"></div>{" "}
+                                Transmitiendo...
+                              </>
+                            ) : (
+                              <>
+                                <i data-lucide="send" className="w-4 h-4"></i>{" "}
+                                Enviar a la Red
+                              </>
+                            )}
+                          </button>
+                        </div>
+                      </form>
+                    )}
+                  </div>
+                </div>
+              </div>
+            )}
+          </div>
+        );
+      };
+
+      const root = ReactDOM.createRoot(document.getElementById("root"));
+      root.render(<PortalEmpleo />);
+    </script>
+  </body>
+</html>
