@@ -50,12 +50,10 @@
         const [cargando, setCargando] = useState(true);
         const [errorConexion, setErrorConexion] = useState(false);
 
-        // Bases de Datos
         const [vacantes, setVacantes] = useState([]);
         const [candidatos, setCandidatos] = useState([]);
         const [cuestionarios, setCuestionarios] = useState([]);
 
-        // Modales
         const [mostrarModalCandidato, setMostrarModalCandidato] =
           useState(false);
         const [mostrarModalVacante, setMostrarModalVacante] = useState(false);
@@ -71,8 +69,9 @@
 
         const [modoEdicionCandidato, setModoEdicionCandidato] = useState(false);
         const [modoEdicionVacante, setModoEdicionVacante] = useState(false);
+        const [modoEdicionCuestionario, setModoEdicionCuestionario] =
+          useState(false);
 
-        // Formularios
         const [nuevoCandidato, setNuevoCandidato] = useState({
           id: null,
           nombre_completo: "",
@@ -90,13 +89,13 @@
           id_creador: 1,
         });
         const [nuevoCuestionario, setNuevoCuestionario] = useState({
+          id: null,
           titulo: "",
           preguntas: [
             { texto: "", tipo: "abierta", opciones: [""], opcionCorrecta: 0 },
           ],
         });
 
-        // Filtros
         const [filtroEstadoCandidato, setFiltroEstadoCandidato] =
           useState("Todos");
         const [filtroEstadoVacante, setFiltroEstadoVacante] = useState("Todas");
@@ -448,6 +447,34 @@
           });
         };
 
+        const abrirModalEdicionCuestionario = (cuestionario) => {
+          let preguntasParsed = [];
+          try {
+            preguntasParsed = cuestionario.preguntas.startsWith("[")
+              ? JSON.parse(cuestionario.preguntas)
+              : [
+                  {
+                    texto: cuestionario.preguntas,
+                    tipo: "abierta",
+                    opciones: [""],
+                    opcionCorrecta: 0,
+                  },
+                ];
+          } catch (e) {
+            preguntasParsed = [
+              { texto: "", tipo: "abierta", opciones: [""], opcionCorrecta: 0 },
+            ];
+          }
+
+          setNuevoCuestionario({
+            id: cuestionario.id,
+            titulo: cuestionario.titulo,
+            preguntas: preguntasParsed,
+          });
+          setModoEdicionCuestionario(true);
+          setMostrarModalCuestionario(true);
+        };
+
         const handleGuardarCuestionario = async (e) => {
           e.preventDefault();
           const preguntasValidas = nuevoCuestionario.preguntas.filter(
@@ -459,8 +486,13 @@
             );
 
           try {
-            const response = await fetch(`${API_URL}/cuestionarios/`, {
-              method: "POST",
+            const url = modoEdicionCuestionario
+              ? `${API_URL}/cuestionarios/${nuevoCuestionario.id}`
+              : `${API_URL}/cuestionarios/`;
+            const method = modoEdicionCuestionario ? "PUT" : "POST";
+
+            const response = await fetch(url, {
+              method: method,
               headers: { "Content-Type": "application/json" },
               body: JSON.stringify({
                 titulo: nuevoCuestionario.titulo,
@@ -472,6 +504,7 @@
               cargarDatos();
               setMostrarModalCuestionario(false);
               setNuevoCuestionario({
+                id: null,
                 titulo: "",
                 preguntas: [
                   {
@@ -482,6 +515,7 @@
                   },
                 ],
               });
+              setModoEdicionCuestionario(false);
             } else {
               alert("Error al guardar el cuestionario.");
             }
@@ -659,7 +693,9 @@
                   ></i>{" "}
                   TheOpenRoad
                 </h1>
-                <p className="text-xs text-slate-400 mt-1">SA de CV</p>
+                <p className="text-xs text-slate-400 mt-1">
+                  SA de CV
+                </p>
               </div>
 
               <nav className="flex-1 py-4">
@@ -751,7 +787,22 @@
                         abrirModalNuevoCandidato();
                       else if (vistaActual === "vacantes")
                         abrirModalNuevaVacante();
-                      else setMostrarModalCuestionario(true);
+                      else {
+                        setModoEdicionCuestionario(false);
+                        setNuevoCuestionario({
+                          id: null,
+                          titulo: "",
+                          preguntas: [
+                            {
+                              texto: "",
+                              tipo: "abierta",
+                              opciones: [""],
+                              opcionCorrecta: 0,
+                            },
+                          ],
+                        });
+                        setMostrarModalCuestionario(true);
+                      }
                     }}
                     className="bg-teal-600 hover:bg-teal-700 text-white px-4 py-2 rounded-lg text-sm font-medium flex items-center gap-2 transition-colors shadow-sm whitespace-nowrap z-20"
                   >
@@ -1278,6 +1329,18 @@
                                     </button>
                                     <button
                                       onClick={() =>
+                                        abrirModalEdicionCuestionario(cuest)
+                                      }
+                                      className="p-1.5 text-slate-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
+                                      title="Editar Cuestionario"
+                                    >
+                                      <i
+                                        data-lucide="pencil"
+                                        className="w-4 h-4"
+                                      ></i>
+                                    </button>
+                                    <button
+                                      onClick={() =>
                                         handleEliminarCuestionario(cuest.id)
                                       }
                                       className="p-1.5 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
@@ -1765,13 +1828,17 @@
                         data-lucide="clipboard-list"
                         className="w-5 h-5 text-teal-600"
                       ></i>{" "}
-                      Crear Cuestionario / Encuesta
+                      {modoEdicionCuestionario
+                        ? "Editar Cuestionario"
+                        : "Crear Cuestionario"}
                     </h3>
                     <button
                       type="button"
                       onClick={() => {
                         setMostrarModalCuestionario(false);
+                        setModoEdicionCuestionario(false);
                         setNuevoCuestionario({
+                          id: null,
                           titulo: "",
                           preguntas: [
                             {
@@ -1954,7 +2021,9 @@
                       type="button"
                       onClick={() => {
                         setMostrarModalCuestionario(false);
+                        setModoEdicionCuestionario(false);
                         setNuevoCuestionario({
+                          id: null,
                           titulo: "",
                           preguntas: [
                             {
