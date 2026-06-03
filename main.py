@@ -75,9 +75,12 @@ class CandidatoResponse(BaseModel):
         from_attributes = True
 
 
+# --- Se agregan campos obligatorios y opcionales para la evaluación y agenda ---
 class CandidatoEvaluacion(BaseModel):
     estado: str
     comentarios: str
+    evaluador: str 
+    fecha_entrevista: Optional[str] = None
 
 
 class CuestionarioCreate(BaseModel):
@@ -262,6 +265,7 @@ def eliminar_candidato(candidato_id: int, db: Session = Depends(get_db)):
     return {"mensaje": "Candidato eliminado exitosamente"}
 
 
+# --- Se registra la entrevista y evaluador en el historial ---
 @app.put("/candidatos/{candidato_id}/evaluar", tags=["Candidatos"])
 def evaluar_candidato(candidato_id: int, eval_data: CandidatoEvaluacion, db: Session = Depends(get_db)):
     candidato = db.query(DBCandidato).filter(
@@ -271,7 +275,13 @@ def evaluar_candidato(candidato_id: int, eval_data: CandidatoEvaluacion, db: Ses
 
     candidato.estado = eval_data.estado
     historial_previo = candidato.historial if candidato.historial else ""
-    nuevo_registro = f"| Evaluado ({eval_data.estado}): {eval_data.comentarios}"
+    
+    # Registramos de forma diferente si es una entrevista agendada
+    if eval_data.estado == "Entrevista" and eval_data.fecha_entrevista:
+        nuevo_registro = f"| Entrevista el {eval_data.fecha_entrevista} con {eval_data.evaluador}: {eval_data.comentarios}"
+    else:
+        nuevo_registro = f"| Evaluado ({eval_data.estado}) por {eval_data.evaluador}: {eval_data.comentarios}"
+    
     candidato.historial = historial_previo + nuevo_registro
 
     db.commit()
