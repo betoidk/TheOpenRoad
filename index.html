@@ -66,6 +66,9 @@
           useState(null);
         const [cuestionarioVistaPrevia, setCuestionarioVistaPrevia] =
           useState(null);
+          
+        // ESTADO AÑADIDO: Controla si seleccionaron Entrevista, Aceptar o Rechazar
+        const [decisionEvaluacion, setDecisionEvaluacion] = useState("");
 
         const [modoEdicionCandidato, setModoEdicionCandidato] = useState(false);
         const [modoEdicionVacante, setModoEdicionVacante] = useState(false);
@@ -125,6 +128,7 @@
           filtroEstadoVacante,
           filtroEstadoCuestionario,
           busqueda,
+          decisionEvaluacion, // Renderizar iconos al cambiar decisión
         ]);
 
         const cargarDatos = async () => {
@@ -302,12 +306,27 @@
           setModoEdicionCandidato(false);
         };
 
+        // --- Función Handle Evaluar recolecta todos los datos, incluido el evaluador y fecha ---
         const handleEvaluar = async (e) => {
           e.preventDefault();
           if (!candidatoSeleccionado) return;
           const form = e.target;
           const decision = form.decision.value;
           const comentarios = form.comentarios.value;
+          const evaluador = form.evaluador.value; 
+          
+          let fechaFormateada = null;
+          if (form.fecha_entrevista && form.fecha_entrevista.value) {
+            const dateObj = new Date(form.fecha_entrevista.value);
+            fechaFormateada = dateObj.toLocaleString("es-MX", {
+              day: "2-digit",
+              month: "short",
+              year: "numeric",
+              hour: "2-digit",
+              minute: "2-digit"
+            });
+          }
+
           const nuevoEstado =
             decision === "Aceptar"
               ? "Aceptado"
@@ -324,6 +343,8 @@
                 body: JSON.stringify({
                   estado: nuevoEstado,
                   comentarios: comentarios,
+                  evaluador: evaluador,
+                  fecha_entrevista: fechaFormateada
                 }),
               },
             );
@@ -815,6 +836,7 @@
               </header>
 
               <div className="flex-1 overflow-auto p-8 bg-slate-50 relative z-0">
+                {/* --- Tarjetas de Resumen --- */}
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
                   <div className="bg-white p-6 rounded-xl shadow-sm border border-slate-100 flex items-center gap-4">
                     <div className="p-3 bg-blue-50 text-blue-600 rounded-lg">
@@ -857,6 +879,7 @@
                   </div>
                 </div>
 
+                {}
                 {vistaActual === "candidatos" && !errorConexion && (
                   <div className="bg-white rounded-xl shadow-sm border border-slate-200 overflow-visible relative">
                     <div className="px-6 py-4 border-b border-slate-200 flex justify-between items-center bg-white rounded-t-xl z-20">
@@ -1009,6 +1032,7 @@
                                   <button
                                     onClick={() => {
                                       setCandidatoSeleccionado(cand);
+                                      setDecisionEvaluacion(""); // Reiniciamos selección
                                       setMostrarModalEvaluacion(true);
                                     }}
                                     className="inline-flex items-center gap-1.5 text-xs font-semibold text-teal-700 bg-teal-50 hover:bg-teal-600 hover:text-white px-3 py-1.5 rounded-lg transition-all shadow-sm border border-teal-100 hover:border-transparent"
@@ -1061,6 +1085,7 @@
                   </div>
                 )}
 
+                {}
                 {vistaActual === "vacantes" && !errorConexion && (
                   <div className="bg-white rounded-xl shadow-sm border border-slate-200 overflow-visible relative">
                     <div className="px-6 py-4 border-b border-slate-200 flex justify-between items-center bg-white rounded-t-xl z-20">
@@ -1163,7 +1188,7 @@
                                 </td>
                                 <td className="px-6 py-4 font-semibold text-slate-800">
                                   {vac.titulo}
-                                </td>
+                                 </td>
                                 <td className="px-6 py-4 text-sm text-slate-600 truncate max-w-[200px]">
                                   {vac.descripcion}
                                 </td>
@@ -1226,6 +1251,7 @@
                   </div>
                 )}
 
+                {}
                 {vistaActual === "cuestionarios" && !errorConexion && (
                   <div className="bg-white rounded-xl shadow-sm border border-slate-200 overflow-visible relative">
                     <div className="px-6 py-4 border-b border-slate-200 flex justify-between items-center bg-white rounded-t-xl z-20">
@@ -1372,6 +1398,7 @@
               </div>
             </main>
 
+            {}
             {mostrarModalVacante && (
               <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
                 <form
@@ -1480,6 +1507,7 @@
               </div>
             )}
 
+            {}
             {mostrarModalCandidato && (
               <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
                 <form
@@ -1658,6 +1686,7 @@
               </div>
             )}
 
+            {}
             {mostrarModalEvaluacion && candidatoSeleccionado && (
               <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
                 <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md overflow-hidden">
@@ -1734,6 +1763,19 @@
                     className="p-6 bg-white space-y-5"
                   >
                     <div>
+                      <label className="block text-sm font-semibold text-slate-700 mb-1.5">
+                        Evaluador / Entrevistador <span className="text-red-500">*</span>
+                      </label>
+                      <input
+                        required
+                        type="text"
+                        name="evaluador"
+                        placeholder="Ej. Juan Pérez"
+                        className="w-full px-4 py-2 bg-slate-50 border border-slate-200 rounded-lg focus:bg-white focus:outline-none focus:border-teal-500 focus:ring-1 focus:ring-teal-500 text-sm transition-all"
+                      />
+                    </div>
+
+                    <div>
                       <label className="block text-sm font-semibold text-slate-700 mb-3">
                         Resolución del Proceso
                       </label>
@@ -1744,6 +1786,8 @@
                             name="decision"
                             value="Entrevista"
                             required
+                            checked={decisionEvaluacion === "Entrevista"}
+                            onChange={(e) => setDecisionEvaluacion(e.target.value)}
                             className="peer sr-only"
                           />
                           <div className="p-2 flex flex-col items-center justify-center border-2 border-slate-200 rounded-lg cursor-pointer peer-checked:border-blue-500 peer-checked:bg-blue-50 peer-checked:text-blue-700 text-slate-500 font-medium text-[11px] transition-all hover:bg-slate-50 h-full text-center">
@@ -1760,6 +1804,8 @@
                             name="decision"
                             value="Aceptar"
                             required
+                            checked={decisionEvaluacion === "Aceptar"}
+                            onChange={(e) => setDecisionEvaluacion(e.target.value)}
                             className="peer sr-only"
                           />
                           <div className="p-2 flex flex-col items-center justify-center border-2 border-slate-200 rounded-lg cursor-pointer peer-checked:border-green-500 peer-checked:bg-green-50 peer-checked:text-green-700 text-slate-500 font-medium text-[11px] transition-all hover:bg-slate-50 h-full text-center">
@@ -1776,6 +1822,8 @@
                             name="decision"
                             value="Rechazar"
                             required
+                            checked={decisionEvaluacion === "Rechazar"}
+                            onChange={(e) => setDecisionEvaluacion(e.target.value)}
                             className="peer sr-only"
                           />
                           <div className="p-2 flex flex-col items-center justify-center border-2 border-slate-200 rounded-lg cursor-pointer peer-checked:border-red-500 peer-checked:bg-red-50 peer-checked:text-red-700 text-slate-500 font-medium text-[11px] transition-all hover:bg-slate-50 h-full text-center">
@@ -1788,6 +1836,22 @@
                         </label>
                       </div>
                     </div>
+
+                    {decisionEvaluacion === "Entrevista" && (
+                      <div className="pt-2 animate-in fade-in duration-300">
+                        <label className="block text-sm font-semibold text-slate-700 mb-1.5 flex items-center gap-2">
+                          <i data-lucide="clock" className="w-4 h-4 text-blue-500"></i>
+                          Fecha y Hora de la Entrevista <span className="text-red-500">*</span>
+                        </label>
+                        <input
+                          required
+                          type="datetime-local"
+                          name="fecha_entrevista"
+                          className="w-full px-4 py-2.5 bg-blue-50/30 border border-blue-200 rounded-lg focus:bg-white focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 text-sm transition-all"
+                        />
+                      </div>
+                    )}
+
                     <div>
                       <label className="block text-sm font-semibold text-slate-700 mb-1.5">
                         Justificación (Auditable)
@@ -1814,6 +1878,7 @@
               </div>
             )}
 
+            {}
             {mostrarModalCuestionario && (
               <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
                 <form
@@ -2049,6 +2114,7 @@
               </div>
             )}
 
+            {}
             {cuestionarioVistaPrevia &&
               (() => {
                 let preguntasRender = [];
