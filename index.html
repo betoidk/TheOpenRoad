@@ -66,8 +66,7 @@
           useState(null);
         const [cuestionarioVistaPrevia, setCuestionarioVistaPrevia] =
           useState(null);
-          
-        // ESTADO AÑADIDO: Controla si seleccionaron Entrevista, Aceptar o Rechazar
+
         const [decisionEvaluacion, setDecisionEvaluacion] = useState("");
 
         const [modoEdicionCandidato, setModoEdicionCandidato] = useState(false);
@@ -84,13 +83,16 @@
           cvFile: null,
           vacanteId: "",
         });
+
         const [nuevaVacante, setNuevaVacante] = useState({
           id: null,
           titulo: "",
           descripcion: "",
           estado: "Abierta",
           id_creador: 1,
+          id_cuestionario: "",
         });
+
         const [nuevoCuestionario, setNuevoCuestionario] = useState({
           id: null,
           titulo: "",
@@ -128,7 +130,7 @@
           filtroEstadoVacante,
           filtroEstadoCuestionario,
           busqueda,
-          decisionEvaluacion, // Renderizar iconos al cambiar decisión
+          decisionEvaluacion,
         ]);
 
         const cargarDatos = async () => {
@@ -161,6 +163,13 @@
                     .filter(Boolean)
                 : [];
 
+              let respuestasParseadas = null;
+              try {
+                if (c.respuestas_cuestionario) {
+                  respuestasParseadas = JSON.parse(c.respuestas_cuestionario);
+                }
+              } catch (e) {}
+
               return {
                 id: c.id,
                 nombre: c.nombre_completo,
@@ -176,6 +185,7 @@
                       .filter((s) => s)
                   : ["CV Registrado en MySQL"],
                 vacanteId: c.id_vacante || null,
+                respuestas_cuestionario: respuestasParseadas,
               };
             });
             setCandidatos(candidatosAdaptados);
@@ -194,10 +204,18 @@
               ? `${API_URL}/vacantes/${nuevaVacante.id}`
               : `${API_URL}/vacantes/`;
             const method = modoEdicionVacante ? "PUT" : "POST";
+
+            const payload = {
+              ...nuevaVacante,
+              id_cuestionario: nuevaVacante.id_cuestionario
+                ? parseInt(nuevaVacante.id_cuestionario)
+                : null,
+            };
+
             const response = await fetch(url, {
               method: method,
               headers: { "Content-Type": "application/json" },
-              body: JSON.stringify(nuevaVacante),
+              body: JSON.stringify(payload),
             });
             if (response.ok) {
               cargarDatos();
@@ -218,6 +236,7 @@
             descripcion: vacante.descripcion,
             estado: vacante.estado,
             id_creador: vacante.id_creador,
+            id_cuestionario: vacante.id_cuestionario || "",
           });
           setModoEdicionVacante(true);
           setMostrarModalVacante(true);
@@ -233,6 +252,7 @@
             descripcion: "",
             estado: "Abierta",
             id_creador: 1,
+            id_cuestionario: "",
           });
           setModoEdicionVacante(false);
         };
@@ -263,6 +283,7 @@
               method: method,
               body: formData,
             });
+
             if (response.ok) {
               cargarDatos();
               setMostrarModalCandidato(false);
@@ -306,15 +327,14 @@
           setModoEdicionCandidato(false);
         };
 
-        // --- Función Handle Evaluar recolecta todos los datos, incluido el evaluador y fecha ---
         const handleEvaluar = async (e) => {
           e.preventDefault();
           if (!candidatoSeleccionado) return;
           const form = e.target;
           const decision = form.decision.value;
           const comentarios = form.comentarios.value;
-          const evaluador = form.evaluador.value; 
-          
+          const evaluador = form.evaluador.value;
+
           let fechaFormateada = null;
           if (form.fecha_entrevista && form.fecha_entrevista.value) {
             const dateObj = new Date(form.fecha_entrevista.value);
@@ -323,7 +343,7 @@
               month: "short",
               year: "numeric",
               hour: "2-digit",
-              minute: "2-digit"
+              minute: "2-digit",
             });
           }
 
@@ -344,7 +364,7 @@
                   estado: nuevoEstado,
                   comentarios: comentarios,
                   evaluador: evaluador,
-                  fecha_entrevista: fechaFormateada
+                  fecha_entrevista: fechaFormateada,
                 }),
               },
             );
@@ -371,7 +391,6 @@
                 method: "DELETE",
               });
               if (response.ok) cargarDatos();
-              else alert("Error al eliminar la vacante.");
             } catch (error) {
               console.error(error);
             }
@@ -389,7 +408,6 @@
                 method: "DELETE",
               });
               if (response.ok) cargarDatos();
-              else alert("Error al eliminar el candidato.");
             } catch (error) {
               console.error(error);
             }
@@ -437,11 +455,10 @@
           nuevasPreguntas[pIndex].opciones = nuevasPreguntas[
             pIndex
           ].opciones.filter((_, i) => i !== oIndex);
-          if (nuevasPreguntas[pIndex].opcionCorrecta === oIndex) {
+          if (nuevasPreguntas[pIndex].opcionCorrecta === oIndex)
             nuevasPreguntas[pIndex].opcionCorrecta = 0;
-          } else if (nuevasPreguntas[pIndex].opcionCorrecta > oIndex) {
+          else if (nuevasPreguntas[pIndex].opcionCorrecta > oIndex)
             nuevasPreguntas[pIndex].opcionCorrecta -= 1;
-          }
           setNuevoCuestionario({
             ...nuevoCuestionario,
             preguntas: nuevasPreguntas,
@@ -486,7 +503,6 @@
               { texto: "", tipo: "abierta", opciones: [""], opcionCorrecta: 0 },
             ];
           }
-
           setNuevoCuestionario({
             id: cuestionario.id,
             titulo: cuestionario.titulo,
@@ -537,8 +553,6 @@
                 ],
               });
               setModoEdicionCuestionario(false);
-            } else {
-              alert("Error al guardar el cuestionario.");
             }
           } catch (error) {
             console.error(error);
@@ -554,7 +568,6 @@
                 method: "DELETE",
               });
               if (response.ok) cargarDatos();
-              else alert("Error al eliminar el cuestionario.");
             } catch (error) {
               console.error(error);
             }
@@ -586,10 +599,10 @@
         });
 
         const cuestionariosFiltrados = cuestionarios.filter((c) => {
-          const searchMatch =
+          return (
             busqueda.toLowerCase() === "" ||
-            c.titulo?.toLowerCase().includes(busqueda.toLowerCase());
-          return searchMatch;
+            c.titulo?.toLowerCase().includes(busqueda.toLowerCase())
+          );
         });
 
         const getNombreVacante = (id) => {
@@ -836,7 +849,6 @@
               </header>
 
               <div className="flex-1 overflow-auto p-8 bg-slate-50 relative z-0">
-                {/* --- Tarjetas de Resumen --- */}
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
                   <div className="bg-white p-6 rounded-xl shadow-sm border border-slate-100 flex items-center gap-4">
                     <div className="p-3 bg-blue-50 text-blue-600 rounded-lg">
@@ -886,7 +898,6 @@
                       <h3 className="font-semibold text-slate-800 flex items-center gap-2">
                         Base de Candidatos en MySQL
                       </h3>
-
                       <div className="relative inline-block text-left">
                         <button
                           onClick={() =>
@@ -894,13 +905,12 @@
                           }
                           className={`flex items-center gap-2 text-sm font-medium border px-3 py-1.5 rounded-md transition-colors ${filtroEstadoCandidato !== "Todos" || menuFiltroAbierto ? "border-teal-500 text-teal-700 bg-teal-50" : "border-slate-300 text-slate-600 hover:bg-slate-50"}`}
                         >
-                          <i data-lucide="filter" className="w-4 h-4"></i>
-                          Filtro: {filtroEstadoCandidato}
+                          <i data-lucide="filter" className="w-4 h-4"></i>{" "}
+                          Filtro: {filtroEstadoCandidato}{" "}
                           {filtroEstadoCandidato !== "Todos" && (
                             <span className="w-2 h-2 rounded-full bg-teal-500 absolute -top-1 -right-1"></span>
                           )}
                         </button>
-
                         {menuFiltroAbierto && (
                           <div className="origin-top-right absolute right-0 mt-2 w-40 rounded-md shadow-lg bg-white ring-1 ring-black ring-opacity-5 z-50">
                             <div className="py-1">
@@ -994,6 +1004,14 @@
                                           title="CV Adjunto"
                                         ></i>
                                       )}
+                                      {/* AÑADIDO: Indicador si el candidato respondió el cuestionario */}
+                                      {cand.respuestas_cuestionario && (
+                                        <i
+                                          data-lucide="clipboard-list"
+                                          className="w-3.5 h-3.5 text-amber-500"
+                                          title="Cuestionario Resuelto"
+                                        ></i>
+                                      )}
                                     </span>
                                     <span className="text-xs text-slate-500">
                                       {cand.email}
@@ -1032,7 +1050,7 @@
                                   <button
                                     onClick={() => {
                                       setCandidatoSeleccionado(cand);
-                                      setDecisionEvaluacion(""); // Reiniciamos selección
+                                      setDecisionEvaluacion("");
                                       setMostrarModalEvaluacion(true);
                                     }}
                                     className="inline-flex items-center gap-1.5 text-xs font-semibold text-teal-700 bg-teal-50 hover:bg-teal-600 hover:text-white px-3 py-1.5 rounded-lg transition-all shadow-sm border border-teal-100 hover:border-transparent"
@@ -1092,7 +1110,6 @@
                       <h3 className="font-semibold text-slate-800">
                         Registro de Vacantes en MySQL
                       </h3>
-
                       <div className="relative inline-block text-left">
                         <button
                           onClick={() =>
@@ -1100,13 +1117,12 @@
                           }
                           className={`flex items-center gap-2 text-sm font-medium border px-3 py-1.5 rounded-md transition-colors ${filtroEstadoVacante !== "Todas" || menuFiltroAbierto ? "border-teal-500 text-teal-700 bg-teal-50" : "border-slate-300 text-slate-600 hover:bg-slate-50"}`}
                         >
-                          <i data-lucide="filter" className="w-4 h-4"></i>
-                          Filtro: {filtroEstadoVacante}
+                          <i data-lucide="filter" className="w-4 h-4"></i>{" "}
+                          Filtro: {filtroEstadoVacante}{" "}
                           {filtroEstadoVacante !== "Todas" && (
                             <span className="w-2 h-2 rounded-full bg-teal-500 absolute -top-1 -right-1"></span>
                           )}
                         </button>
-
                         {menuFiltroAbierto && (
                           <div className="origin-top-right absolute right-0 mt-2 w-40 rounded-md shadow-lg bg-white ring-1 ring-black ring-opacity-5 z-50">
                             <div className="py-1">
@@ -1163,6 +1179,9 @@
                               Descripción
                             </th>
                             <th className="px-6 py-4 font-semibold text-center">
+                              Cuestionario
+                            </th>
+                            <th className="px-6 py-4 font-semibold text-center">
                               Candidatos
                             </th>
                             <th className="px-6 py-4 font-semibold">Estado</th>
@@ -1176,6 +1195,11 @@
                             const conteo = candidatos.filter(
                               (c) => c.vacanteId === vac.id,
                             ).length;
+                            const cuestionarioVinculado = vac.id_cuestionario
+                              ? cuestionarios.find(
+                                  (c) => c.id === vac.id_cuestionario,
+                                )?.titulo
+                              : "N/A";
                             return (
                               <tr
                                 key={vac.id}
@@ -1188,9 +1212,27 @@
                                 </td>
                                 <td className="px-6 py-4 font-semibold text-slate-800">
                                   {vac.titulo}
-                                 </td>
+                                </td>
                                 <td className="px-6 py-4 text-sm text-slate-600 truncate max-w-[200px]">
                                   {vac.descripcion}
+                                </td>
+                                <td className="px-6 py-4 text-center">
+                                  {vac.id_cuestionario ? (
+                                    <span
+                                      className="inline-flex items-center gap-1 bg-amber-50 text-amber-700 text-[10px] font-bold px-2 py-1 rounded border border-amber-200 truncate max-w-[120px]"
+                                      title={cuestionarioVinculado}
+                                    >
+                                      <i
+                                        data-lucide="clipboard-list"
+                                        className="w-3 h-3"
+                                      ></i>{" "}
+                                      {cuestionarioVinculado}
+                                    </span>
+                                  ) : (
+                                    <span className="text-xs text-slate-400 italic">
+                                      No
+                                    </span>
+                                  )}
                                 </td>
                                 <td className="px-6 py-4 text-center">
                                   <span className="inline-flex items-center justify-center w-7 h-7 rounded-full bg-teal-50 text-teal-700 font-bold text-xs border border-teal-100 shadow-sm">
@@ -1238,7 +1280,7 @@
                           {vacantesFiltradas.length === 0 && (
                             <tr>
                               <td
-                                colSpan="6"
+                                colSpan="7"
                                 className="p-8 text-center text-slate-500"
                               >
                                 No se encontraron vacantes.
@@ -1258,7 +1300,6 @@
                       <h3 className="font-semibold text-slate-800">
                         Repositorio de Encuestas y Formularios en MySQL
                       </h3>
-
                       <div className="relative inline-block text-left">
                         <button
                           onClick={() =>
@@ -1266,13 +1307,12 @@
                           }
                           className={`flex items-center gap-2 text-sm font-medium border px-3 py-1.5 rounded-md transition-colors ${filtroEstadoCuestionario !== "Todos" || menuFiltroAbierto ? "border-teal-500 text-teal-700 bg-teal-50" : "border-slate-300 text-slate-600 hover:bg-slate-50"}`}
                         >
-                          <i data-lucide="filter" className="w-4 h-4"></i>
-                          Filtro: {filtroEstadoCuestionario}
+                          <i data-lucide="filter" className="w-4 h-4"></i>{" "}
+                          Filtro: {filtroEstadoCuestionario}{" "}
                           {filtroEstadoCuestionario !== "Todos" && (
                             <span className="w-2 h-2 rounded-full bg-teal-500 absolute -top-1 -right-1"></span>
                           )}
                         </button>
-
                         {menuFiltroAbierto && (
                           <div className="origin-top-right absolute right-0 mt-2 w-40 rounded-md shadow-lg bg-white ring-1 ring-black ring-opacity-5 z-50">
                             <div className="py-1">
@@ -1317,7 +1357,6 @@
                                 ? JSON.parse(cuest.preguntas).length
                                 : cuest.preguntas.split("|").length;
                             } catch (e) {}
-
                             return (
                               <tr
                                 key={cuest.id}
@@ -1461,6 +1500,34 @@
                         className="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-lg focus:bg-white focus:outline-none focus:border-teal-500 focus:ring-1 focus:ring-teal-500 text-sm transition-all"
                       />
                     </div>
+
+                    <div>
+                      <label className="block text-sm font-semibold text-slate-700 mb-1.5 flex items-center gap-2">
+                        <i
+                          data-lucide="clipboard-list"
+                          className="w-4 h-4 text-slate-500"
+                        ></i>{" "}
+                        Asignar Cuestionario (Opcional)
+                      </label>
+                      <select
+                        value={nuevaVacante.id_cuestionario || ""}
+                        onChange={(e) =>
+                          setNuevaVacante({
+                            ...nuevaVacante,
+                            id_cuestionario: e.target.value,
+                          })
+                        }
+                        className="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-lg focus:bg-white focus:outline-none focus:border-teal-500 focus:ring-1 focus:ring-teal-500 text-sm transition-all"
+                      >
+                        <option value="">Ninguno</option>
+                        {cuestionarios.map((c) => (
+                          <option key={c.id} value={c.id}>
+                            {c.titulo}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+
                     <div>
                       <label className="block text-sm font-semibold text-slate-700 mb-1.5">
                         Estado Inicial
@@ -1507,7 +1574,6 @@
               </div>
             )}
 
-            {}
             {mostrarModalCandidato && (
               <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
                 <form
@@ -1574,7 +1640,6 @@
                         />
                       </div>
                     </div>
-
                     <div className="grid grid-cols-2 gap-4">
                       <div>
                         <label className="block text-sm font-semibold text-slate-700 mb-1.5">
@@ -1619,7 +1684,6 @@
                         </select>
                       </div>
                     </div>
-
                     <div>
                       <label className="block text-sm font-semibold text-slate-700 mb-1.5">
                         Habilidades (Separadas por coma)
@@ -1638,7 +1702,6 @@
                         className="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-lg focus:bg-white focus:outline-none focus:border-teal-500 focus:ring-1 focus:ring-teal-500 text-sm transition-all"
                       />
                     </div>
-
                     <div className="bg-slate-50 p-4 border border-slate-200 border-dashed rounded-xl">
                       <label className="block text-sm font-semibold text-slate-700 mb-2 flex items-center gap-1.5">
                         <i
@@ -1686,11 +1749,10 @@
               </div>
             )}
 
-            {}
             {mostrarModalEvaluacion && candidatoSeleccionado && (
               <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-                <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md overflow-hidden">
-                  <div className="px-6 py-4 border-b border-teal-100 flex justify-between items-center bg-teal-50/50">
+                <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md overflow-hidden max-h-[95vh] flex flex-col">
+                  <div className="px-6 py-4 border-b border-teal-100 flex justify-between items-center bg-teal-50/50 shrink-0">
                     <h3 className="font-bold text-teal-900 flex items-center gap-2">
                       <i
                         data-lucide="clipboard-check"
@@ -1705,7 +1767,8 @@
                       <i data-lucide="x" className="w-5 h-5"></i>
                     </button>
                   </div>
-                  <div className="p-6 bg-white border-b border-slate-100">
+
+                  <div className="p-6 bg-white border-b border-slate-100 overflow-y-auto flex-1">
                     <div className="flex items-center gap-3 mb-4">
                       <div className="w-10 h-10 rounded-full bg-slate-100 border border-slate-200 flex items-center justify-center text-slate-500 font-bold">
                         {candidatoSeleccionado.nombre.charAt(0).toUpperCase()}
@@ -1720,7 +1783,6 @@
                             {getNombreVacante(candidatoSeleccionado.vacanteId)}
                           </span>
                         </p>
-
                         {candidatoSeleccionado.documento ? (
                           <button
                             type="button"
@@ -1743,6 +1805,33 @@
                       </div>
                     </div>
 
+                    {candidatoSeleccionado.respuestas_cuestionario && (
+                      <div className="bg-amber-50 p-3 rounded-lg border border-amber-100 mb-4">
+                        <p className="text-[10px] font-bold uppercase text-amber-600 mb-2 tracking-wider flex items-center gap-1">
+                          <i
+                            data-lucide="clipboard-list"
+                            className="w-3 h-3"
+                          ></i>{" "}
+                          Respuestas del Cuestionario:
+                        </p>
+                        <div className="text-xs text-slate-700 space-y-3">
+                          {Object.entries(
+                            candidatoSeleccionado.respuestas_cuestionario,
+                          ).map(([preg, resp], i) => (
+                            <div
+                              key={i}
+                              className="border-l-2 border-amber-300 pl-2"
+                            >
+                              <p className="font-semibold">{preg}</p>
+                              <p className="text-amber-800 italic mt-0.5">
+                                R: {resp}
+                              </p>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+
                     <div className="bg-slate-50 p-3 rounded-lg border border-slate-100">
                       <p className="text-[10px] font-bold uppercase text-slate-400 mb-2 tracking-wider">
                         Historial en MySQL:
@@ -1760,11 +1849,12 @@
                   </div>
                   <form
                     onSubmit={handleEvaluar}
-                    className="p-6 bg-white space-y-5"
+                    className="p-6 bg-white space-y-5 shrink-0"
                   >
                     <div>
                       <label className="block text-sm font-semibold text-slate-700 mb-1.5">
-                        Evaluador / Entrevistador <span className="text-red-500">*</span>
+                        Evaluador / Entrevistador{" "}
+                        <span className="text-red-500">*</span>
                       </label>
                       <input
                         required
@@ -1787,7 +1877,9 @@
                             value="Entrevista"
                             required
                             checked={decisionEvaluacion === "Entrevista"}
-                            onChange={(e) => setDecisionEvaluacion(e.target.value)}
+                            onChange={(e) =>
+                              setDecisionEvaluacion(e.target.value)
+                            }
                             className="peer sr-only"
                           />
                           <div className="p-2 flex flex-col items-center justify-center border-2 border-slate-200 rounded-lg cursor-pointer peer-checked:border-blue-500 peer-checked:bg-blue-50 peer-checked:text-blue-700 text-slate-500 font-medium text-[11px] transition-all hover:bg-slate-50 h-full text-center">
@@ -1805,7 +1897,9 @@
                             value="Aceptar"
                             required
                             checked={decisionEvaluacion === "Aceptar"}
-                            onChange={(e) => setDecisionEvaluacion(e.target.value)}
+                            onChange={(e) =>
+                              setDecisionEvaluacion(e.target.value)
+                            }
                             className="peer sr-only"
                           />
                           <div className="p-2 flex flex-col items-center justify-center border-2 border-slate-200 rounded-lg cursor-pointer peer-checked:border-green-500 peer-checked:bg-green-50 peer-checked:text-green-700 text-slate-500 font-medium text-[11px] transition-all hover:bg-slate-50 h-full text-center">
@@ -1823,7 +1917,9 @@
                             value="Rechazar"
                             required
                             checked={decisionEvaluacion === "Rechazar"}
-                            onChange={(e) => setDecisionEvaluacion(e.target.value)}
+                            onChange={(e) =>
+                              setDecisionEvaluacion(e.target.value)
+                            }
                             className="peer sr-only"
                           />
                           <div className="p-2 flex flex-col items-center justify-center border-2 border-slate-200 rounded-lg cursor-pointer peer-checked:border-red-500 peer-checked:bg-red-50 peer-checked:text-red-700 text-slate-500 font-medium text-[11px] transition-all hover:bg-slate-50 h-full text-center">
@@ -1840,8 +1936,12 @@
                     {decisionEvaluacion === "Entrevista" && (
                       <div className="pt-2 animate-in fade-in duration-300">
                         <label className="block text-sm font-semibold text-slate-700 mb-1.5 flex items-center gap-2">
-                          <i data-lucide="clock" className="w-4 h-4 text-blue-500"></i>
-                          Fecha y Hora de la Entrevista <span className="text-red-500">*</span>
+                          <i
+                            data-lucide="clock"
+                            className="w-4 h-4 text-blue-500"
+                          ></i>{" "}
+                          Fecha y Hora de la Entrevista{" "}
+                          <span className="text-red-500">*</span>
                         </label>
                         <input
                           required
@@ -1878,7 +1978,6 @@
               </div>
             )}
 
-            {}
             {mostrarModalCuestionario && (
               <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
                 <form
@@ -1918,7 +2017,6 @@
                       <i data-lucide="x" className="w-5 h-5"></i>
                     </button>
                   </div>
-
                   <div className="space-y-5 overflow-y-auto flex-1 pr-2">
                     <div>
                       <label className="block text-sm font-semibold text-slate-700 mb-1.5">
@@ -1939,7 +2037,6 @@
                         className="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-lg focus:bg-white focus:outline-none focus:border-teal-500 focus:ring-1 focus:ring-teal-500 text-sm transition-all"
                       />
                     </div>
-
                     <div>
                       <label className="block text-sm font-semibold text-slate-700 mb-3">
                         Configuración de Preguntas
@@ -2001,7 +2098,6 @@
                                 </select>
                               </div>
                             </div>
-
                             {preg.tipo === "opcion_multiple" && (
                               <div className="pl-4 border-l-2 border-teal-200 space-y-2 mt-3">
                                 <p className="text-xs font-semibold text-slate-500 mb-1">
@@ -2078,7 +2174,6 @@
                       </button>
                     </div>
                   </div>
-
                   <div className="mt-6 flex justify-end gap-3 pt-4 border-t border-slate-100 shrink-0">
                     <button
                       type="button"
@@ -2114,7 +2209,6 @@
               </div>
             )}
 
-            {}
             {cuestionarioVistaPrevia &&
               (() => {
                 let preguntasRender = [];
@@ -2133,7 +2227,6 @@
                 } catch (e) {
                   preguntasRender = [];
                 }
-
                 return (
                   <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
                     <div className="bg-white rounded-2xl shadow-2xl w-full max-w-2xl overflow-hidden flex flex-col max-h-[90vh]">
@@ -2152,13 +2245,11 @@
                           <i data-lucide="x" className="w-5 h-5"></i>
                         </button>
                       </div>
-
                       <div className="p-8 overflow-y-auto bg-slate-50 flex-1">
                         <div className="bg-white p-8 rounded-xl shadow-sm border border-slate-200">
                           <h2 className="text-2xl font-bold text-slate-800 mb-6 text-center border-b border-slate-100 pb-4">
                             {cuestionarioVistaPrevia.titulo}
                           </h2>
-
                           <div className="space-y-8">
                             {preguntasRender.map((preg, idx) => (
                               <div key={idx}>
@@ -2168,7 +2259,6 @@
                                   </span>{" "}
                                   {preg.texto}
                                 </p>
-
                                 {preg.tipo === "opcion_multiple" ? (
                                   <div className="space-y-2 pl-5">
                                     {preg.opciones.map((opcion, oIdx) => {
@@ -2214,7 +2304,6 @@
                           </div>
                         </div>
                       </div>
-
                       <div className="p-4 border-t border-slate-100 bg-white flex justify-end shrink-0">
                         <button
                           onClick={() => setCuestionarioVistaPrevia(null)}
