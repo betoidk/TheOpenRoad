@@ -22,6 +22,7 @@ class DBVacante(Base):
     descripcion = Column(Text, nullable=False)
     estado = Column(Enum('Abierta', 'Pausada', 'Cerrada'), default='Abierta')
     id_creador = Column(Integer, nullable=False)
+    id_cuestionario = Column(Integer, nullable=True)
 
 
 class DBCandidato(Base):
@@ -37,6 +38,7 @@ class DBCandidato(Base):
     historial = Column(Text, default="CV Registrado en MySQL")
     id_vacante = Column(Integer, nullable=True)
     habilidades = Column(Text, nullable=True)
+    respuestas_cuestionario = Column(Text, nullable=True)
 
 
 class DBCuestionario(Base):
@@ -46,11 +48,15 @@ class DBCuestionario(Base):
     preguntas = Column(Text, nullable=False)
 
 
+Base.metadata.create_all(bind=engine)
+
+
 class VacanteCreate(BaseModel):
     titulo: str
     descripcion: str
     estado: Optional[str] = "Abierta"
     id_creador: int
+    id_cuestionario: Optional[int] = None
 
 
 class VacanteResponse(VacanteCreate):
@@ -70,16 +76,16 @@ class CandidatoResponse(BaseModel):
     id_vacante: Optional[int] = None
     estado: Optional[str] = "Recibido"
     historial: Optional[str] = "CV Registrado en MySQL"
+    respuestas_cuestionario: Optional[str] = None
 
     class Config:
         from_attributes = True
 
 
-# --- Se agregan campos obligatorios y opcionales para la evaluación y agenda ---
 class CandidatoEvaluacion(BaseModel):
     estado: str
     comentarios: str
-    evaluador: str 
+    evaluador: str
     fecha_entrevista: Optional[str] = None
 
 
@@ -108,7 +114,6 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
-
 
 os.makedirs("uploads", exist_ok=True)
 app.mount("/uploads", StaticFiles(directory="uploads"), name="uploads")
@@ -151,6 +156,7 @@ def actualizar_vacante(vacante_id: int, vacante_actualizada: VacanteCreate, db: 
     vacante.titulo = vacante_actualizada.titulo
     vacante.descripcion = vacante_actualizada.descripcion
     vacante.estado = vacante_actualizada.estado
+    vacante.id_cuestionario = vacante_actualizada.id_cuestionario
 
     db.commit()
     db.refresh(vacante)
@@ -174,6 +180,7 @@ def registrar_candidato(
     origen: str = Form(...),
     habilidades: Optional[str] = Form(None),
     id_vacante: Optional[int] = Form(None),
+    respuestas_cuestionario: Optional[str] = Form(None),
     cv: UploadFile = File(None),
     db: Session = Depends(get_db)
 ):
@@ -199,7 +206,8 @@ def registrar_candidato(
         origen=origen,
         url_cv=ruta_archivo,
         habilidades=habs_limpias,
-        id_vacante=id_vacante
+        id_vacante=id_vacante,
+        respuestas_cuestionario=respuestas_cuestionario
     )
     db.add(nuevo_candidato)
     db.commit()
@@ -215,6 +223,7 @@ def actualizar_candidato(
     origen: str = Form(...),
     habilidades: Optional[str] = Form(None),
     id_vacante: Optional[int] = Form(None),
+    respuestas_cuestionario: Optional[str] = Form(None),
     cv: UploadFile = File(None),
     db: Session = Depends(get_db)
 ):
@@ -235,6 +244,9 @@ def actualizar_candidato(
     candidato.origen = origen
     candidato.habilidades = habilidades if habilidades else ""
     candidato.id_vacante = id_vacante
+
+    if respuestas_cuestionario is not None:
+        candidato.respuestas_cuestionario = respuestas_cuestionario
 
     if cv and cv.filename:
         nombre_archivo = cv.filename.replace(" ", "_")
@@ -265,7 +277,6 @@ def eliminar_candidato(candidato_id: int, db: Session = Depends(get_db)):
     return {"mensaje": "Candidato eliminado exitosamente"}
 
 
-# --- Se registra la entrevista y evaluador en el historial ---
 @app.put("/candidatos/{candidato_id}/evaluar", tags=["Candidatos"])
 def evaluar_candidato(candidato_id: int, eval_data: CandidatoEvaluacion, db: Session = Depends(get_db)):
     candidato = db.query(DBCandidato).filter(
@@ -275,13 +286,12 @@ def evaluar_candidato(candidato_id: int, eval_data: CandidatoEvaluacion, db: Ses
 
     candidato.estado = eval_data.estado
     historial_previo = candidato.historial if candidato.historial else ""
-    
-    # Registramos de forma diferente si es una entrevista agendada
+
     if eval_data.estado == "Entrevista" and eval_data.fecha_entrevista:
         nuevo_registro = f"| Entrevista el {eval_data.fecha_entrevista} con {eval_data.evaluador}: {eval_data.comentarios}"
     else:
         nuevo_registro = f"| Evaluado ({eval_data.estado}) por {eval_data.evaluador}: {eval_data.comentarios}"
-    
+
     candidato.historial = historial_previo + nuevo_registro
 
     db.commit()
