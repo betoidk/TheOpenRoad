@@ -714,6 +714,8 @@
           if (vistaActual === "vacantes") return "Gestión de Vacantes";
           if (vistaActual === "cuestionarios")
             return "Encuestas y Cuestionarios";
+          if (vistaActual === "documentacion")
+            return "Documentación del Proyecto";
         };
 
         return (
@@ -768,6 +770,18 @@
                       <span className="font-medium">Cuestionarios</span>
                     </button>
                   </li>
+                  <li>
+                    <button
+                      onClick={() => {
+                        setVistaActual("documentacion");
+                        setBusqueda("");
+                      }}
+                      className={`w-full flex items-center gap-3 px-6 py-3 hover:bg-slate-800 transition-colors ${vistaActual === "documentacion" ? "bg-slate-800 text-teal-400 border-r-4 border-teal-400" : ""}`}
+                    >
+                      <i data-lucide="book-open" className="w-5 h-5"></i>
+                      <span className="font-medium">Documentación</span>
+                    </button>
+                  </li>
                 </ul>
               </nav>
 
@@ -792,104 +806,347 @@
                   {tituloHeader()}
                 </h2>
 
-                <div className="flex gap-4 w-full sm:w-auto">
-                  <div className="relative flex-1 sm:w-64">
-                    <i
-                      data-lucide="search"
-                      className="absolute left-3 top-1/2 transform -translate-y-1/2 text-slate-400 w-4 h-4"
-                    ></i>
-                    <input
-                      type="text"
-                      spellCheck="false"
-                      placeholder={
-                        vistaActual === "candidatos"
-                          ? "Buscar candidato..."
-                          : vistaActual === "vacantes"
-                            ? "Buscar vacante..."
-                            : "Buscar cuestionario..."
-                      }
-                      value={busqueda}
-                      onChange={(e) => setBusqueda(e.target.value)}
-                      className="w-full pl-10 pr-4 py-2 bg-slate-50 border border-slate-200 rounded-lg focus:bg-white focus:outline-none focus:border-teal-500 focus:ring-1 focus:ring-teal-500 text-sm transition-all"
-                    />
+                {vistaActual !== "documentacion" && (
+                  <div className="flex gap-4 w-full sm:w-auto">
+                    <div className="relative flex-1 sm:w-64">
+                      <i
+                        data-lucide="search"
+                        className="absolute left-3 top-1/2 transform -translate-y-1/2 text-slate-400 w-4 h-4"
+                      ></i>
+                      <input
+                        type="text"
+                        spellCheck="false"
+                        placeholder={
+                          vistaActual === "candidatos"
+                            ? "Buscar candidato..."
+                            : vistaActual === "vacantes"
+                              ? "Buscar vacante..."
+                              : "Buscar cuestionario..."
+                        }
+                        value={busqueda}
+                        onChange={(e) => setBusqueda(e.target.value)}
+                        className="w-full pl-10 pr-4 py-2 bg-slate-50 border border-slate-200 rounded-lg focus:bg-white focus:outline-none focus:border-teal-500 focus:ring-1 focus:ring-teal-500 text-sm transition-all"
+                      />
+                    </div>
+                    <button
+                      onClick={() => {
+                        if (vistaActual === "candidatos")
+                          abrirModalNuevoCandidato();
+                        else if (vistaActual === "vacantes")
+                          abrirModalNuevaVacante();
+                        else {
+                          setModoEdicionCuestionario(false);
+                          setNuevoCuestionario({
+                            id: null,
+                            titulo: "",
+                            preguntas: [
+                              {
+                                texto: "",
+                                tipo: "abierta",
+                                opciones: [""],
+                                opcionCorrecta: 0,
+                              },
+                            ],
+                          });
+                          setMostrarModalCuestionario(true);
+                        }
+                      }}
+                      className="bg-teal-600 hover:bg-teal-700 text-white px-4 py-2 rounded-lg text-sm font-medium flex items-center gap-2 transition-colors shadow-sm whitespace-nowrap z-20"
+                    >
+                      <i data-lucide="plus" className="w-4 h-4"></i>
+                      {vistaActual === "candidatos"
+                        ? "Añadir Candidato"
+                        : vistaActual === "vacantes"
+                          ? "Nueva Vacante"
+                          : "Nuevo Cuestionario"}
+                    </button>
                   </div>
-                  <button
-                    onClick={() => {
-                      if (vistaActual === "candidatos")
-                        abrirModalNuevoCandidato();
-                      else if (vistaActual === "vacantes")
-                        abrirModalNuevaVacante();
-                      else {
-                        setModoEdicionCuestionario(false);
-                        setNuevoCuestionario({
-                          id: null,
-                          titulo: "",
-                          preguntas: [
-                            {
-                              texto: "",
-                              tipo: "abierta",
-                              opciones: [""],
-                              opcionCorrecta: 0,
-                            },
-                          ],
-                        });
-                        setMostrarModalCuestionario(true);
-                      }
-                    }}
-                    className="bg-teal-600 hover:bg-teal-700 text-white px-4 py-2 rounded-lg text-sm font-medium flex items-center gap-2 transition-colors shadow-sm whitespace-nowrap z-20"
-                  >
-                    <i data-lucide="plus" className="w-4 h-4"></i>
-                    {vistaActual === "candidatos"
-                      ? "Añadir Candidato"
-                      : vistaActual === "vacantes"
-                        ? "Nueva Vacante"
-                        : "Nuevo Cuestionario"}
-                  </button>
-                </div>
+                )}
               </header>
 
               <div className="flex-1 overflow-auto p-8 bg-slate-50 relative z-0">
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-                  <div className="bg-white p-6 rounded-xl shadow-sm border border-slate-100 flex items-center gap-4">
-                    <div className="p-3 bg-blue-50 text-blue-600 rounded-lg">
-                      <i data-lucide="users" className="w-6 h-6"></i>
+                {vistaActual !== "documentacion" && (
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+                    <div className="bg-white p-6 rounded-xl shadow-sm border border-slate-100 flex items-center gap-4">
+                      <div className="p-3 bg-blue-50 text-blue-600 rounded-lg">
+                        <i data-lucide="users" className="w-6 h-6"></i>
+                      </div>
+                      <div>
+                        <p className="text-sm text-slate-500 font-medium">
+                          Total Candidatos
+                        </p>
+                        <p className="text-2xl font-bold text-slate-800">
+                          {candidatos.length}
+                        </p>
+                      </div>
                     </div>
-                    <div>
-                      <p className="text-sm text-slate-500 font-medium">
-                        Total Candidatos
-                      </p>
-                      <p className="text-2xl font-bold text-slate-800">
-                        {candidatos.length}
-                      </p>
+                    <div className="bg-white p-6 rounded-xl shadow-sm border border-slate-100 flex items-center gap-4">
+                      <div className="p-3 bg-teal-50 text-teal-600 rounded-lg">
+                        <i data-lucide="briefcase" className="w-6 h-6"></i>
+                      </div>
+                      <div>
+                        <p className="text-sm text-slate-500 font-medium">
+                          Vacantes Activas
+                        </p>
+                        <p className="text-2xl font-bold text-slate-800">
+                          {
+                            vacantes.filter((v) => v.estado === "Abierta")
+                              .length
+                          }
+                        </p>
+                      </div>
+                    </div>
+                    <div className="bg-white p-6 rounded-xl shadow-sm border border-slate-100 flex items-center gap-4">
+                      <div className="p-3 bg-indigo-50 text-indigo-600 rounded-lg">
+                        <i data-lucide="clipboard-list" className="w-6 h-6"></i>
+                      </div>
+                      <div>
+                        <p className="text-sm text-slate-500 font-medium">
+                          Cuestionarios
+                        </p>
+                        <p className="text-xl font-bold text-slate-800">
+                          {cuestionarios.length} Activos
+                        </p>
+                      </div>
                     </div>
                   </div>
-                  <div className="bg-white p-6 rounded-xl shadow-sm border border-slate-100 flex items-center gap-4">
-                    <div className="p-3 bg-teal-50 text-teal-600 rounded-lg">
-                      <i data-lucide="briefcase" className="w-6 h-6"></i>
-                    </div>
-                    <div>
-                      <p className="text-sm text-slate-500 font-medium">
-                        Vacantes Activas
+                )}
+
+                {vistaActual === "documentacion" && (
+                  <div className="space-y-6">
+                    <div className="bg-white p-8 rounded-xl shadow-sm border border-slate-200">
+                      <h3 className="text-2xl font-bold text-slate-800 mb-2">
+                        Caso 1. Automatización del reclutamiento y selección
+                      </h3>
+                      <p className="text-slate-500 mb-8">
+                        Validación de cumplimiento de los criterios estipulados
+                        en el requerimiento del proyecto.
                       </p>
-                      <p className="text-2xl font-bold text-slate-800">
-                        {vacantes.filter((v) => v.estado === "Abierta").length}
-                      </p>
+
+                      <div className="grid grid-cols-1 xl:grid-cols-3 gap-8">
+                        <div className="bg-slate-50 rounded-xl p-6 border border-slate-200 h-full">
+                          <div className="w-12 h-12 bg-blue-100 text-blue-600 rounded-lg flex items-center justify-center mb-4">
+                            <i
+                              data-lucide="alert-circle"
+                              className="w-6 h-6"
+                            ></i>
+                          </div>
+                          <h4 className="text-lg font-bold text-slate-800 mb-3">
+                            Situación
+                          </h4>
+                          <p className="text-sm text-slate-600 mb-5 pb-5 border-b border-slate-200">
+                            Una empresa recibe currículums por correo, WhatsApp
+                            y hojas impresas. No sabe cuántos candidatos tiene,
+                            quién los entrevistó ni por qué fueron aceptados o
+                            rechazados.
+                          </p>
+                          <h5 className="text-xs font-bold uppercase tracking-wider text-slate-500 mb-4">
+                            Solución Implementada:
+                          </h5>
+                          <ul className="space-y-3 text-sm text-slate-700">
+                            <li className="flex items-start gap-2.5">
+                              <i
+                                data-lucide="check-circle"
+                                className="w-4 h-4 text-teal-500 mt-0.5 shrink-0"
+                              ></i>
+                              <span>
+                                <strong>Métricas en tiempo real</strong> en el
+                                panel superior (conoce exactamente cuántos
+                                tiene).
+                              </span>
+                            </li>
+                            <li className="flex items-start gap-2.5">
+                              <i
+                                data-lucide="check-circle"
+                                className="w-4 h-4 text-teal-500 mt-0.5 shrink-0"
+                              ></i>
+                              <span>
+                                Campo <strong>"Canal / Origen"</strong>{" "}
+                                integrado para centralizar y etiquetar CVs de
+                                WhatsApp, Correo e Impresos.
+                              </span>
+                            </li>
+                            <li className="flex items-start gap-2.5">
+                              <i
+                                data-lucide="check-circle"
+                                className="w-4 h-4 text-teal-500 mt-0.5 shrink-0"
+                              ></i>
+                              <span>
+                                Campo de <strong>"Evaluador"</strong> y{" "}
+                                <strong>"Justificación"</strong> obligatorios al
+                                documentar cada decisión.
+                              </span>
+                            </li>
+                          </ul>
+                        </div>
+
+                        <div className="bg-slate-50 rounded-xl p-6 border border-slate-200 h-full">
+                          <div className="w-12 h-12 bg-teal-100 text-teal-600 rounded-lg flex items-center justify-center mb-4">
+                            <i data-lucide="layers" className="w-6 h-6"></i>
+                          </div>
+                          <h4 className="text-lg font-bold text-slate-800 mb-3">
+                            Sistema Sugerido
+                          </h4>
+                          <p className="text-sm text-slate-600 mb-5 pb-5 border-b border-slate-200">
+                            ATS / módulo de reclutamiento de un HCM:
+                          </p>
+                          <ul className="space-y-3 text-sm text-slate-700">
+                            <li className="flex items-start gap-2.5">
+                              <i
+                                data-lucide="check-square"
+                                className="w-4 h-4 text-teal-500 mt-0.5 shrink-0"
+                              ></i>
+                              <div>
+                                <strong>Registro de vacantes:</strong>{" "}
+                                <span className="text-slate-500 block text-xs mt-0.5">
+                                  Módulo CRUD activo para vacantes.
+                                </span>
+                              </div>
+                            </li>
+                            <li className="flex items-start gap-2.5">
+                              <i
+                                data-lucide="check-square"
+                                className="w-4 h-4 text-teal-500 mt-0.5 shrink-0"
+                              ></i>
+                              <div>
+                                <strong>Perfil de puesto:</strong>{" "}
+                                <span className="text-slate-500 block text-xs mt-0.5">
+                                  Definido en descripciones y habilidades
+                                  vinculadas.
+                                </span>
+                              </div>
+                            </li>
+                            <li className="flex items-start gap-2.5">
+                              <i
+                                data-lucide="check-square"
+                                className="w-4 h-4 text-teal-500 mt-0.5 shrink-0"
+                              ></i>
+                              <div>
+                                <strong>Base de candidatos:</strong>{" "}
+                                <span className="text-slate-500 block text-xs mt-0.5">
+                                  Directorio unificado conectado a MySQL.
+                                </span>
+                              </div>
+                            </li>
+                            <li className="flex items-start gap-2.5">
+                              <i
+                                data-lucide="check-square"
+                                className="w-4 h-4 text-teal-500 mt-0.5 shrink-0"
+                              ></i>
+                              <div>
+                                <strong>Filtros automatizados:</strong>{" "}
+                                <span className="text-slate-500 block text-xs mt-0.5">
+                                  Cuestionarios pre-filtro automáticos, barra de
+                                  búsqueda y filtros por estado.
+                                </span>
+                              </div>
+                            </li>
+                            <li className="flex items-start gap-2.5">
+                              <i
+                                data-lucide="check-square"
+                                className="w-4 h-4 text-teal-500 mt-0.5 shrink-0"
+                              ></i>
+                              <div>
+                                <strong>Agenda de entrevistas:</strong>{" "}
+                                <span className="text-slate-500 block text-xs mt-0.5">
+                                  Input de fecha y hora requerido al agendar
+                                  candidatos.
+                                </span>
+                              </div>
+                            </li>
+                            <li className="flex items-start gap-2.5">
+                              <i
+                                data-lucide="check-square"
+                                className="w-4 h-4 text-teal-500 mt-0.5 shrink-0"
+                              ></i>
+                              <div>
+                                <strong>Historial de evaluación:</strong>{" "}
+                                <span className="text-slate-500 block text-xs mt-0.5">
+                                  Bitácora auditable visible en la tarjeta de
+                                  cada perfil.
+                                </span>
+                              </div>
+                            </li>
+                          </ul>
+                        </div>
+
+                        <div className="bg-slate-50 rounded-xl p-6 border border-slate-200 h-full">
+                          <div className="w-12 h-12 bg-indigo-100 text-indigo-600 rounded-lg flex items-center justify-center mb-4">
+                            <i data-lucide="award" className="w-6 h-6"></i>
+                          </div>
+                          <h4 className="text-lg font-bold text-slate-800 mb-3">
+                            Contribución al capital social
+                          </h4>
+                          <p className="text-sm text-slate-600 mb-5 pb-5 border-b border-slate-200">
+                            Resultados positivos logrados tras la
+                            implementación:
+                          </p>
+                          <ul className="space-y-4 text-sm text-slate-700">
+                            <li className="flex items-start gap-2.5">
+                              <i
+                                data-lucide="shield-check"
+                                className="w-4 h-4 text-teal-500 mt-0.5 shrink-0"
+                              ></i>
+                              <span>
+                                <strong>Selección más transparente:</strong>{" "}
+                                Todo candidato sigue el mismo canal digital.
+                              </span>
+                            </li>
+                            <li className="flex items-start gap-2.5">
+                              <i
+                                data-lucide="shield-check"
+                                className="w-4 h-4 text-teal-500 mt-0.5 shrink-0"
+                              ></i>
+                              <span>
+                                <strong>
+                                  Menos favoritismos o criterios informales:
+                                </strong>{" "}
+                                Estandarizado a través de Cuestionarios técnicos
+                                fijos y justificaciones escritas.
+                              </span>
+                            </li>
+                            <li className="flex items-start gap-2.5">
+                              <i
+                                data-lucide="shield-check"
+                                className="w-4 h-4 text-teal-500 mt-0.5 shrink-0"
+                              ></i>
+                              <span>
+                                <strong>Mejor coordinación:</strong> Jefaturas y
+                                RRHH ven la misma base de datos en tiempo real.
+                              </span>
+                            </li>
+                            <li className="flex items-start gap-2.5">
+                              <i
+                                data-lucide="shield-check"
+                                className="w-4 h-4 text-teal-500 mt-0.5 shrink-0"
+                              ></i>
+                              <span>
+                                <strong>
+                                  Conservación de talento potencial:
+                                </strong>{" "}
+                                Candidatos pasados permanecen en la BBDD para
+                                futuras vacantes.
+                              </span>
+                            </li>
+                            <li className="flex items-start gap-2.5">
+                              <i
+                                data-lucide="shield-check"
+                                className="w-4 h-4 text-teal-500 mt-0.5 shrink-0"
+                              ></i>
+                              <span>
+                                <strong>
+                                  Decisiones documentadas y verificables:
+                                </strong>{" "}
+                                Historial permanente inalterable en BBDD para
+                                auditorías.
+                              </span>
+                            </li>
+                          </ul>
+                        </div>
+                      </div>
                     </div>
                   </div>
-                  <div className="bg-white p-6 rounded-xl shadow-sm border border-slate-100 flex items-center gap-4">
-                    <div className="p-3 bg-indigo-50 text-indigo-600 rounded-lg">
-                      <i data-lucide="clipboard-list" className="w-6 h-6"></i>
-                    </div>
-                    <div>
-                      <p className="text-sm text-slate-500 font-medium">
-                        Cuestionarios
-                      </p>
-                      <p className="text-xl font-bold text-slate-800">
-                        {cuestionarios.length} Activos
-                      </p>
-                    </div>
-                  </div>
-                </div>
+                )}
 
                 {}
                 {vistaActual === "candidatos" && !errorConexion && (
